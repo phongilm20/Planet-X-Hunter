@@ -1,145 +1,98 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import HeaderAero from './components/HeaderAero';
-import OrbitalView3D from './components/OrbitalView3D';
-import SkyCanvasViewer from './components/SkyCanvasViewer';
-import ScientistDrawer from './components/ScientistDrawer';
-import SettingsDrawer from './components/SettingsDrawer';
+import TopBarAero from './components/TopBarAero';
+import DeepSpaceUniverse3D from './components/DeepSpaceUniverse3D';
+import TimelineScrubber from './components/TimelineScrubber';
+import RightPanelAI from './components/RightPanelAI';
 import HowToGuide from './components/HowToGuide';
-import { NASA_TARGETS, OBSERVATIONAL_EPOCHS } from './data/targets';
+import { NASA_TARGETS } from './data/targets';
 
 const API_BASE = '';
 
 function parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  const modeParam = params.get('mode');
-  const mode = modeParam || 'epoch';
-  // If user opens with mode=diff, blink, coadd or view=telescope, open telescope directly
-  const viewParam = params.get('view');
-  const defaultView = viewParam ? viewParam : (modeParam && ['diff', 'blink', 'coadd'].includes(modeParam) ? 'telescope' : 'orbit');
+  const targetParam = params.get('target');
+  const matchedTarget = NASA_TARGETS.find((t) => t.name === targetParam || t.shortName === targetParam);
 
   return {
-    ra: params.has('ra') ? parseFloat(params.get('ra')) : 133.79513,
-    dec: params.has('dec') ? parseFloat(params.get('dec')) : -7.24515,
-    fov: params.has('fov') ? Math.min(15, Math.max(1, parseFloat(params.get('fov')))) : 5,
-    target: params.get('target') || 'WISE 0855-0714',
-    mode,
-    band: params.has('band') ? Math.min(102, Math.max(1, parseInt(params.get('band'), 10))) : 50,
-    stretch: params.get('stretch') || 'linear',
-    palette: params.get('palette') || 'daylight',
-    epoch: params.has('epoch') ? parseInt(params.get('epoch'), 10) : 4,
-    view: defaultView,
-    persona: params.get('persona') || 'explorer',
+    target: matchedTarget || NASA_TARGETS[0],
+    ra: params.has('ra') ? parseFloat(params.get('ra')) : matchedTarget?.ra || NASA_TARGETS[0].ra,
+    dec: params.has('dec') ? parseFloat(params.get('dec')) : matchedTarget?.dec || NASA_TARGETS[0].dec,
+    year: params.has('year') ? parseFloat(params.get('year')) : 2026.5,
+    palette: params.get('palette') || 'deepspace',
   };
 }
 
 export default function App() {
   const initParams = useRef(parseUrlParams());
 
-  // Navigation & Persona Modes
-  const [viewMode, setViewMode] = useState(initParams.current.view); // 'orbit' | 'telescope'
-  const [personaMode, setPersonaMode] = useState(initParams.current.persona); // 'explorer' | 'scientist'
-  const [palette, setPalette] = useState(initParams.current.palette); // 'daylight' | 'infrared' | 'deepspace'
-
-  // Celestial Pointing & View State
-  const [selectedTarget, setSelectedTarget] = useState(
-    NASA_TARGETS.find((t) => t.name === initParams.current.target) || NASA_TARGETS[0]
-  );
+  const [selectedTarget, setSelectedTarget] = useState(initParams.current.target);
   const [ra, setRa] = useState(initParams.current.ra);
   const [dec, setDec] = useState(initParams.current.dec);
-  const [fov, setFov] = useState(initParams.current.fov);
-  const [currentEpoch, setCurrentEpoch] = useState(initParams.current.epoch); // 1 to 8
-  const [mode, setMode] = useState(initParams.current.mode); // 'epoch' | 'diff' | 'coadd'
-  const [band, setBand] = useState(initParams.current.band);
-  const [stretch, setStretch] = useState(initParams.current.stretch);
-  const [blinkSpeed, setBlinkSpeed] = useState(2.0);
+  const [year, setYear] = useState(initParams.current.year);
+  const [palette, setPalette] = useState(initParams.current.palette);
 
-  // Overlays & Drawers
-  const [showAnomalies, setShowAnomalies] = useState(false);
-  const [showGaiaOverlay, setShowGaiaOverlay] = useState(true);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showScientistDrawer, setShowScientistDrawer] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
+  // Warp-Speed Flight Trigger
+  const [isWarping, setIsWarping] = useState(false);
 
-  // Data
-  const [cutoutData, setCutoutData] = useState(null);
+  // Telemetry & Spectrometry Data
   const [spectralData, setSpectralData] = useState(null);
   const [gaiaStars, setGaiaStars] = useState([]);
   const [irsaSources, setIrsaSources] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Synchronize URL parameters
   useEffect(() => {
     const params = new URLSearchParams();
+    if (selectedTarget?.name) params.set('target', selectedTarget.name);
     if (ra != null) params.set('ra', ra.toFixed(5));
     if (dec != null) params.set('dec', dec.toFixed(5));
-    params.set('fov', String(fov));
-    if (selectedTarget?.name) params.set('target', selectedTarget.name);
-    params.set('mode', mode);
-    params.set('band', String(band));
+    params.set('year', year.toFixed(1));
     params.set('palette', palette);
-    params.set('epoch', String(currentEpoch));
-    params.set('view', viewMode);
-    params.set('persona', personaMode);
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     window.history.replaceState(null, '', newUrl);
-  }, [ra, dec, fov, selectedTarget, mode, band, palette, currentEpoch, viewMode, personaMode]);
+  }, [selectedTarget, ra, dec, year, palette]);
 
-  // Handle Target Selection
+  // Handle Target Selection with Warp Flight
   const handleSelectTarget = useCallback((target) => {
     if (!target) return;
     setSelectedTarget(target);
     setRa(target.ra);
     setDec(target.dec);
-    // Smoothly transition into Telescope View on target selection
-    setViewMode('telescope');
+    setIsWarping(true); // Trigger warp flight
   }, []);
 
-  // Fetch Cutout Image
-  useEffect(() => {
-    if (ra == null || dec == null) return;
+  // Handle Custom RA/Dec Warp
+  const handleCustomCoords = useCallback((newRa, newDec) => {
+    const customTarget = {
+      name: `J${newRa.toFixed(2)}${newDec >= 0 ? '+' : ''}${newDec.toFixed(2)}`,
+      shortName: 'Custom Target',
+      ra: newRa,
+      dec: newDec,
+      type: 'Custom Celestial Coordinates',
+      spectralType: 'Unclassified',
+      description: `User-specified celestial position (RA: ${newRa.toFixed(4)}°, Dec: ${newDec.toFixed(4)}°).`,
+      properMotion: { ra: 0.0, dec: 0.0, total: 0.0 },
+      distanceLy: null,
+      color: '#38BDF8',
+      haloColor: '#0EA5E9',
+      starRadius: 1.5,
+      icon: '✨',
+      expectedSignature: 'monopole',
+    };
+    setSelectedTarget(customTarget);
+    setRa(newRa);
+    setDec(newDec);
+    setIsWarping(true);
+  }, []);
 
-    const controller = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    const epochParam = mode === 'diff' ? 'diff' : mode === 'coadd' ? 'coadd' : String(currentEpoch);
-    const params = new URLSearchParams({
-      ra: ra.toFixed(6),
-      dec: dec.toFixed(6),
-      fov: String(fov),
-      epoch: epochParam,
-      band: String(band),
-      stretch,
-      palette,
-      diff_a: '1',
-      diff_b: String(currentEpoch || 5),
-    });
-
-    fetch(`${API_BASE}/api/cutout?${params}`, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Cutout API error: ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setCutoutData(data);
-      })
-      .catch((err) => {
-        if (err.name !== 'AbortError') setError(err.message);
-      })
-      .finally(() => setLoading(false));
-
-    return () => controller.abort();
-  }, [ra, dec, fov, mode, band, stretch, palette, currentEpoch]);
-
-  // Fetch Gaia DR3 Astrometry Catalog
+  // Fetch Gaia DR3 Astrometry Catalog around active target
   useEffect(() => {
     if (ra == null || dec == null) return;
     const params = new URLSearchParams({
       ra: ra.toFixed(6),
       dec: dec.toFixed(6),
-      radius: String(fov),
+      radius: '0.6',
     });
 
     fetch(`${API_BASE}/api/gaia?${params}`)
@@ -148,15 +101,15 @@ export default function App() {
         if (data.sources) setGaiaStars(data.sources);
       })
       .catch(() => {});
-  }, [ra, dec, fov]);
+  }, [ra, dec]);
 
-  // Fetch NASA IRSA / AllWISE Photometry Catalog
+  // Fetch NASA IRSA Catalog
   useEffect(() => {
     if (ra == null || dec == null) return;
     const params = new URLSearchParams({
       ra: ra.toFixed(6),
       dec: dec.toFixed(6),
-      radius: String(fov),
+      radius: '0.6',
     });
 
     fetch(`${API_BASE}/api/irsa_query?${params}`)
@@ -165,123 +118,70 @@ export default function App() {
         if (data.sources) setIrsaSources(data.sources);
       })
       .catch(() => {});
-  }, [ra, dec, fov]);
+  }, [ra, dec]);
 
-  // Fetch 102-Band Spectrogram
+  // Fetch 102-Band SPHEREx Spectrum
   useEffect(() => {
     if (ra == null || dec == null) return;
     const params = new URLSearchParams({
       ra: ra.toFixed(6),
       dec: dec.toFixed(6),
-      epoch: String(currentEpoch),
+      epoch: '5',
     });
 
     fetch(`${API_BASE}/api/spectrum?${params}`)
       .then((r) => r.json())
       .then(setSpectralData)
       .catch(() => {});
-  }, [ra, dec, currentEpoch]);
-
-  // Handle Pixel Click to Slew
-  const handlePixelClick = useCallback((newRa, newDec) => {
-    setRa(newRa);
-    setDec(newDec);
-  }, []);
+  }, [ra, dec]);
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden font-sans">
-      {/* ── 1. Floating Top Glassmorphism Header Bar ── */}
-      <HeaderAero
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        personaMode={personaMode}
-        setPersonaMode={setPersonaMode}
-        palette={palette}
-        setPalette={setPalette}
+    <div className="relative w-screen h-screen overflow-hidden font-sans select-none">
+      
+      {/* ── 1. Top Floating Glass Header Bar ── */}
+      <TopBarAero
         selectedTarget={selectedTarget}
         onSelectTarget={handleSelectTarget}
-        onOpenSettings={() => setShowSettings(true)}
+        palette={palette}
+        setPalette={setPalette}
         onOpenGuide={() => setShowGuide(true)}
-        onOpenScientistDrawer={() => setShowScientistDrawer(true)}
-        band={band}
+        onCustomCoords={handleCustomCoords}
       />
 
-      {/* ── 2. Full-Screen Interactive Viewport ── */}
+      {/* ── 2. 100% Full-Screen 3D Universe Viewport ── */}
       <main className="w-full h-full">
-        {viewMode === 'orbit' ? (
-          <OrbitalView3D
-            onSelectTarget={handleSelectTarget}
-            onEnterTelescope={() => setViewMode('telescope')}
-            selectedTarget={selectedTarget}
-          />
-        ) : (
-          <SkyCanvasViewer
-            cutoutData={cutoutData}
-            loading={loading}
-            error={error}
-            ra={ra}
-            dec={dec}
-            fov={fov}
-            target={selectedTarget}
-            currentEpoch={currentEpoch}
-            onEpochChange={setCurrentEpoch}
-            palette={palette}
-            onPaletteChange={setPalette}
-            mode={mode}
-            onModeChange={setMode}
-            showAnomalies={showAnomalies}
-            onToggleAnomalies={setShowAnomalies}
-            onPixelClick={handlePixelClick}
-            gaiaStars={gaiaStars}
-            showGaiaOverlay={showGaiaOverlay}
-            onToggleGaia={() => setShowGaiaOverlay(!showGaiaOverlay)}
-            personaMode={personaMode}
-          />
-        )}
+        <DeepSpaceUniverse3D
+          target={selectedTarget}
+          year={year}
+          onYearChange={setYear}
+          gaiaStars={gaiaStars}
+          palette={palette}
+          isWarping={isWarping}
+          onWarpComplete={() => setIsWarping(false)}
+        />
       </main>
 
-      {/* ── 3. Scientist Mode Telemetry & Spectrogram Drawer ── */}
-      <ScientistDrawer
-        isOpen={showScientistDrawer}
-        onClose={() => setShowScientistDrawer(false)}
-        spectralData={spectralData}
-        band={band}
-        onBandChange={setBand}
-        gaiaStars={gaiaStars}
-        irsaSources={irsaSources}
-        mode={mode}
-        onModeChange={setMode}
+      {/* ── 3. Floating Astronomical Timeline Scrubber (Bottom Left/Center) ── */}
+      <TimelineScrubber
+        year={year}
+        onYearChange={setYear}
         target={selectedTarget}
-        ra={ra}
-        dec={dec}
       />
 
-      {/* ── 4. Advanced Settings & Filters Drawer ── */}
-      <SettingsDrawer
-        isOpen={showSettings}
-        onClose={() => setShowSettings(false)}
-        fov={fov}
-        onFovChange={setFov}
-        band={band}
-        onBandChange={setBand}
-        stretch={stretch}
-        onStretchChange={setStretch}
-        blinkSpeed={blinkSpeed}
-        onBlinkSpeedChange={setBlinkSpeed}
-        mode={mode}
-        ra={ra}
-        dec={dec}
-        onCoordsChange={(newRa, newDec) => {
-          setRa(newRa);
-          setDec(newDec);
-          setSelectedTarget(null);
-        }}
+      {/* ── 4. Sleek Right-Side Floating AI Assistant Panel (30% Width) ── */}
+      <RightPanelAI
+        target={selectedTarget}
+        spectralData={spectralData}
+        gaiaStars={gaiaStars}
+        irsaSources={irsaSources}
+        year={year}
       />
 
       {/* ── 5. Citizen Science Interactive How-To Guide Modal ── */}
       {showGuide && (
         <HowToGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
       )}
+
     </div>
   );
 }
