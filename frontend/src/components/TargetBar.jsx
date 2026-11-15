@@ -24,28 +24,26 @@ export default function TargetBar({ selectedTarget, onSelect, targets = NASA_TAR
             <button
               key={target.name}
               onClick={() => onSelect(target)}
-              className={`group flex items-center gap-2 px-3 py-1.5 rounded-full border text-left transition-all duration-300 shrink-0 ${
+              className={`group flex items-center gap-1.5 px-3 py-1 rounded-full border text-left transition-all duration-300 shrink-0 ${
                 isSelected
-                  ? 'bg-cyan-950/70 border-cyan-400 shadow-[0_0_16px_rgba(56,189,248,0.35)] ring-1 ring-cyan-400/50 scale-[1.02]'
-                  : 'bg-gray-900/60 border-gray-800/90 hover:border-gray-700 hover:bg-gray-800/80 hover:shadow-lg'
+                  ? 'bg-sky-600 text-white border-sky-600 shadow-md scale-105 font-bold'
+                  : 'bg-white/70 border-slate-200/90 text-slate-700 hover:text-slate-900 hover:bg-white hover:border-slate-300 shadow-sm font-medium'
               }`}
             >
               <span className="text-sm leading-none">{target.icon || '✨'}</span>
 
               <div className="flex items-center gap-1.5">
-                <span
-                  className={`text-xs font-semibold tracking-wide ${
-                    isSelected ? 'text-cyan-300' : 'text-gray-200 group-hover:text-white'
-                  }`}
-                >
+                <span className="text-xs tracking-wide">
                   {target.shortName || target.name}
                 </span>
 
                 <span
                   className={`text-[9px] font-mono px-1.5 py-0.2 rounded-full border ${
-                    isDipole
-                      ? 'bg-blue-950/70 text-blue-300 border-blue-800/50'
-                      : 'bg-amber-950/70 text-amber-300 border-amber-800/50'
+                    isSelected
+                      ? 'bg-sky-700 text-sky-100 border-sky-500'
+                      : isDipole
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
                   }`}
                 >
                   {isDipole ? `${target.properMotion?.total?.toFixed(1) || '8.1'}″/yr` : 'Var'}

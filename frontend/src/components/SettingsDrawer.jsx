@@ -50,6 +50,7 @@ export default function SettingsDrawer({
       onCoordsChange(parsedRa, parsedDec);
       setInputRa('');
       setInputDec('');
+      onClose();
     }
   };
 
@@ -66,44 +67,44 @@ export default function SettingsDrawer({
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div 
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
-      {/* Drawer Container */}
-      <div className="relative w-full max-w-sm h-full bg-[#0E131F]/95 backdrop-blur-2xl border-l border-gray-800/90 shadow-2xl flex flex-col z-10 overflow-y-auto">
+      {/* Drawer Container (Bright VisionOS Aero-Glass) */}
+      <div className="relative w-full max-w-sm h-full bg-white/95 backdrop-blur-2xl border-l border-slate-200/90 shadow-2xl flex flex-col z-10 overflow-y-auto text-slate-900">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
           <div className="flex items-center gap-2">
-            <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
-            <h2 className="text-sm font-bold text-gray-100 tracking-wide">
+            <SlidersHorizontal className="w-4 h-4 text-sky-600" />
+            <h2 className="text-sm font-bold text-slate-900 tracking-wide">
               Advanced Settings & Filters
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-gray-800 transition-colors"
+            className="p-1 rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-5 space-y-6 text-xs text-gray-300">
+        <div className="flex-1 p-6 space-y-6 text-xs text-slate-700">
           {/* Current Target Coordinates HUD */}
-          <div className="p-3 rounded-xl bg-gray-950/70 border border-gray-800/80">
-            <div className="flex items-center gap-1.5 text-gray-400 font-semibold mb-2 uppercase tracking-wider text-[10px]">
-              <Compass className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Current Celestial Pointing</span>
+          <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+            <div className="flex items-center gap-1.5 text-slate-500 font-bold mb-2 uppercase tracking-wider text-[10px]">
+              <Compass className="w-3.5 h-3.5 text-sky-600" />
+              <span>Celestial Pointing (J2000)</span>
             </div>
-            <div className="font-mono text-gray-200 space-y-1 text-[11px]">
+            <div className="font-mono text-slate-800 space-y-1 text-xs">
               <div className="flex justify-between">
-                <span className="text-gray-500">RA (J2000):</span>
-                <span>{ra?.toFixed(5)}° ({raToHMS(ra || 0)})</span>
+                <span className="text-slate-500">Right Ascension:</span>
+                <span className="font-bold">{ra?.toFixed(5)}° ({raToHMS(ra || 0)})</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-500">Dec (J2000):</span>
-                <span>{dec?.toFixed(5)}° ({decToDMS(dec || 0)})</span>
+                <span className="text-slate-500">Declination:</span>
+                <span className="font-bold">{dec?.toFixed(5)}° ({decToDMS(dec || 0)})</span>
               </div>
             </div>
           </div>
@@ -111,11 +112,11 @@ export default function SettingsDrawer({
           {/* ── 1. SPHEREx Wavelength Band Scrubber (1-102) ── */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-semibold text-gray-300">
-                <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="flex items-center gap-1.5 font-bold text-slate-900">
+                <Activity className="w-4 h-4 text-sky-600" />
                 SPHEREx Band ({band}/102)
               </span>
-              <span className="font-mono font-bold text-cyan-400 text-xs bg-cyan-950/80 px-2 py-0.5 rounded border border-cyan-800">
+              <span className="font-mono font-bold text-sky-700 text-xs bg-sky-50 px-2 py-0.5 rounded-full border border-sky-200">
                 λ = {wavelength.toFixed(3)} µm
               </span>
             </div>
@@ -126,33 +127,33 @@ export default function SettingsDrawer({
               max="102"
               value={band}
               onChange={(e) => onBandChange?.(parseInt(e.target.value, 10))}
-              className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
             />
 
             <div className="flex items-center justify-between text-[10px] font-mono">
-              <span className="text-gray-500">0.75 µm</span>
+              <span className="text-slate-500">0.75 µm</span>
               <span
-                className="px-2 py-0.5 rounded text-[9px] font-bold"
+                className="px-2 py-0.5 rounded-full text-[9px] font-bold"
                 style={{
-                  backgroundColor: `${currentDetector.color}20`,
+                  backgroundColor: `${currentDetector.color}15`,
                   color: currentDetector.color,
-                  border: `1px solid ${currentDetector.color}60`,
+                  border: `1px solid ${currentDetector.color}40`,
                 }}
               >
                 {currentDetector.name} ({currentDetector.startWl}–{currentDetector.endWl} µm)
               </span>
-              <span className="text-gray-500">5.00 µm</span>
+              <span className="text-slate-500">5.00 µm</span>
             </div>
           </div>
 
           {/* ── 2. Field of View (FoV) ── */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 font-semibold text-gray-300">
-                <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="flex items-center gap-1.5 font-bold text-slate-900">
+                <Maximize2 className="w-4 h-4 text-sky-600" />
                 Field of View (FoV)
               </span>
-              <span className="font-mono text-cyan-400 font-bold bg-gray-900 px-2 py-0.5 rounded border border-gray-800">
+              <span className="font-mono text-sky-700 font-bold bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
                 {fov?.toFixed(1)} arcmin
               </span>
             </div>
@@ -163,9 +164,9 @@ export default function SettingsDrawer({
               step="0.5"
               value={fov}
               onChange={(e) => onFovChange?.(parseFloat(e.target.value))}
-              className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+              className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
             />
-            <div className="flex justify-between text-[9px] text-gray-500 font-mono">
+            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
               <span>1.0′ (Deep Zoom)</span>
               <span>15.0′ (Wide Survey)</span>
             </div>
@@ -173,11 +174,11 @@ export default function SettingsDrawer({
 
           {/* ── 3. Pixel Contrast Stretch ── */}
           <div className="space-y-2">
-            <span className="flex items-center gap-1.5 font-semibold text-gray-300">
-              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="flex items-center gap-1.5 font-bold text-slate-900">
+              <Sliders className="w-4 h-4 text-sky-600" />
               Dynamic Contrast Stretch
             </span>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-3 gap-2">
               {[
                 { id: 'linear', label: 'Linear', desc: 'Direct ADU' },
                 { id: 'log', label: 'Log', desc: 'Faint structures' },
@@ -186,27 +187,27 @@ export default function SettingsDrawer({
                 <button
                   key={s.id}
                   onClick={() => onStretchChange?.(s.id)}
-                  className={`py-2 px-1 rounded-lg text-center font-mono text-[10px] border transition-all ${
+                  className={`py-2 px-1 rounded-xl text-center font-mono text-[11px] border transition-all ${
                     stretch === s.id
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 font-bold shadow-[0_0_8px_rgba(56,189,248,0.25)]'
-                      : 'bg-gray-900/60 border-gray-800 hover:border-gray-700 text-gray-400'
+                      ? 'bg-sky-600 text-white border-sky-600 font-bold shadow-md'
+                      : 'bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700'
                   }`}
                 >
                   <div className="uppercase">{s.label}</div>
-                  <div className="text-[8px] text-gray-500 font-sans mt-0.5">{s.desc}</div>
+                  <div className={`text-[8px] mt-0.5 ${stretch === s.id ? 'text-sky-100' : 'text-slate-400'}`}>{s.desc}</div>
                 </button>
               ))}
             </div>
           </div>
 
           {/* ── 4. Blink Rate ── */}
-          <div className="space-y-2 p-3 rounded-xl bg-amber-950/20 border border-amber-800/40">
+          <div className="space-y-2 p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
             <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5 text-amber-300 font-semibold">
-                <Gauge className="w-3.5 h-3.5" />
-                Blink Comparator Rate
+              <span className="flex items-center gap-1.5 text-amber-900 font-bold">
+                <Gauge className="w-4 h-4 text-amber-600" />
+                Blink Comparator Speed
               </span>
-              <span className="font-mono text-amber-400 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
+              <span className="font-mono text-amber-800 font-bold bg-white px-2 py-0.5 rounded-full border border-amber-300">
                 {blinkSpeed} Hz
               </span>
             </div>
@@ -217,47 +218,47 @@ export default function SettingsDrawer({
               step="0.5"
               value={blinkSpeed}
               onChange={(e) => onBlinkSpeedChange?.(parseFloat(e.target.value))}
-              className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-amber-400"
+              className="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer accent-amber-600"
             />
-            <div className="flex justify-between text-[9px] text-gray-500 font-mono">
+            <div className="flex justify-between text-[10px] text-amber-700 font-mono">
               <span>0.5 Hz (Slow)</span>
               <span>5.0 Hz (Rapid)</span>
             </div>
           </div>
 
-          {/* ── 5. Goto Celestial Coordinates ── */}
-          <form onSubmit={handleManualCoords} className="space-y-2 pt-2 border-t border-gray-800">
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-300 uppercase tracking-wider">
-              <Search className="w-3 h-3 text-cyan-400" />
+          {/* ── 5. Manual Coordinates Slew ── */}
+          <form onSubmit={handleManualCoords} className="space-y-2 pt-2 border-t border-slate-200">
+            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-900 uppercase tracking-wider">
+              <Search className="w-3.5 h-3.5 text-sky-600" />
               <span>Slew to Celestial Coordinates</span>
             </div>
             <div className="grid grid-cols-2 gap-2 font-mono">
               <div>
-                <label className="text-[9px] text-gray-500 block mb-1">RA (Degrees)</label>
+                <label className="text-[10px] text-slate-500 block mb-1">RA (deg)</label>
                 <input
                   type="number"
                   step="any"
-                  placeholder={ra ? `${ra.toFixed(4)}°` : 'RA (deg)'}
+                  placeholder={ra ? `${ra.toFixed(4)}°` : 'RA'}
                   value={inputRa}
                   onChange={(e) => setInputRa(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-gray-950 border border-gray-800 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-400 text-xs"
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 text-xs"
                 />
               </div>
               <div>
-                <label className="text-[9px] text-gray-500 block mb-1">Dec (Degrees)</label>
+                <label className="text-[10px] text-slate-500 block mb-1">Dec (deg)</label>
                 <input
                   type="number"
                   step="any"
-                  placeholder={dec ? `${dec.toFixed(4)}°` : 'Dec (deg)'}
+                  placeholder={dec ? `${dec.toFixed(4)}°` : 'Dec'}
                   value={inputDec}
                   onChange={(e) => setInputDec(e.target.value)}
-                  className="w-full px-2.5 py-1.5 rounded-lg bg-gray-950 border border-gray-800 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-400 text-xs"
+                  className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:border-sky-500 text-xs"
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="w-full py-2 bg-cyan-950 hover:bg-cyan-900 border border-cyan-800 text-cyan-300 rounded-lg font-semibold transition-colors flex items-center justify-center gap-1.5 text-xs shadow-md"
+              className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-xs shadow-md"
             >
               <Search className="w-3.5 h-3.5" />
               Center Telescope & Cutout
@@ -266,17 +267,17 @@ export default function SettingsDrawer({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-800 bg-gray-950/60 flex items-center justify-between">
+        <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
           <button
             onClick={handleResetDefaults}
-            className="flex items-center gap-1.5 text-gray-400 hover:text-gray-200 text-xs transition-colors"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-slate-900 text-xs font-semibold transition-colors"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Defaults</span>
           </button>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded-lg text-xs font-medium transition-colors"
+            className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-full text-xs font-bold transition-colors shadow"
           >
             Apply & Close
           </button>

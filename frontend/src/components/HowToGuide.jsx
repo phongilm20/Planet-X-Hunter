@@ -138,7 +138,8 @@ export default function HowToGuide({ isOpen, onClose }) {
         position: 'fixed',
         inset: 0,
         zIndex: 9000,
-        backgroundColor: 'rgba(11, 15, 25, 0.95)',
+        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+        backdropFilter: 'blur(12px)',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
@@ -151,15 +152,15 @@ export default function HowToGuide({ isOpen, onClose }) {
         style={{
           position: 'relative',
           width: '100%',
-          maxWidth: 600,
-          background: 'linear-gradient(180deg, #111827 0%, #0B0F19 100%)',
-          border: '1px solid #1E3A5F',
-          borderRadius: 12,
+          maxWidth: 620,
+          background: 'rgba(255, 255, 255, 0.94)',
+          border: '1px solid rgba(255, 255, 255, 0.8)',
+          borderRadius: 24,
           padding: '36px 32px 32px',
-          boxShadow: '0 0 60px rgba(0, 229, 255, 0.08)',
-          color: '#C9D1D9',
+          boxShadow: '0 25px 60px rgba(0, 0, 0, 0.3)',
+          color: '#1E293B',
           fontFamily:
-            "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif",
+            "-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif",
           fontSize: 14,
           lineHeight: 1.7,
         }}
@@ -170,28 +171,20 @@ export default function HowToGuide({ isOpen, onClose }) {
           aria-label="Close guide"
           style={{
             position: 'absolute',
-            top: 12,
-            right: 12,
-            background: 'transparent',
-            border: '1px solid #30363D',
-            borderRadius: 6,
-            color: '#8B949E',
-            fontSize: 18,
-            width: 32,
-            height: 32,
+            top: 16,
+            right: 16,
+            background: '#F1F5F9',
+            border: '1px solid #CBD5E1',
+            borderRadius: '50%',
+            color: '#334155',
+            fontSize: 16,
+            width: 34,
+            height: 34,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            transition: 'color 0.15s, border-color 0.15s',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#FF6B6B';
-            e.currentTarget.style.borderColor = '#FF6B6B';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#8B949E';
-            e.currentTarget.style.borderColor = '#30363D';
+            fontWeight: 'bold',
           }}
         >
           ✕
