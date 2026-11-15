@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import TargetBar from './components/TargetBar';
-import ControlPanel from './components/ControlPanel';
+import FloatingToolbar from './components/FloatingToolbar';
+import SettingsDrawer from './components/SettingsDrawer';
 import EpochViewer from './components/EpochViewer';
 import SpectrumChart from './components/SpectrumChart';
 import AladinViewer from './components/AladinViewer';
 import HowToGuide from './components/HowToGuide';
 import StatusBar from './components/StatusBar';
+import { bandToWavelength } from './data/targets';
+import { SlidersHorizontal, BookOpen, Layers, Sparkles } from 'lucide-react';
 
 const API_BASE = '';
 
@@ -51,6 +54,9 @@ export default function App() {
   const [blinkSpeed, setBlinkSpeed] = useState(2);
   const [showAnomalies, setShowAnomalies] = useState(false);
   const [showGuide, setShowGuide] = useState(isFirstVisit());
+  const [showSettings, setShowSettings] = useState(false);
+  const [showSpectrum, setShowSpectrum] = useState(false);
+
   const [spectralData, setSpectralData] = useState(null);
   const [cutoutData, setCutoutData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -111,8 +117,7 @@ export default function App() {
         })
         .catch(() => {});
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [handleSelectTarget, selectedTarget]);
 
   // ---------------------------------------------------------------------------
   // Fetch cutout when view parameters change
@@ -120,12 +125,11 @@ export default function App() {
   useEffect(() => {
     if (ra == null || dec == null) return;
 
-    // Cancel in-flight request
     if (cutoutAbort.current) cutoutAbort.current.abort();
     const controller = new AbortController();
     cutoutAbort.current = controller;
 
-    const epochParam = mode === 'blink' ? 'epoch1' : mode; // blink handled client-side
+    const epochParam = mode === 'blink' ? 'epoch1' : mode;
     const params = new URLSearchParams({
       ra: ra.toFixed(6),
       dec: dec.toFixed(6),
@@ -217,7 +221,7 @@ export default function App() {
   }, [ra, dec, mode]);
 
   // ---------------------------------------------------------------------------
-  // Coordinate setter (e.g. from Aladin click)
+  // Coordinate setter (e.g. from Aladin click or manual goto)
   // ---------------------------------------------------------------------------
   const handleCoordsChange = useCallback((newRa, newDec) => {
     setRa(newRa);
@@ -225,76 +229,85 @@ export default function App() {
     setSelectedTarget(null);
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Render
-  // ---------------------------------------------------------------------------
+  const wavelength = bandToWavelength(band);
+
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden bg-[#0B0F19]">
-      {/* ===== Header ===== */}
-      <header className="flex items-center justify-between px-4 py-2 bg-gray-900/80 border-b border-gray-800 shrink-0">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-[#070A12] text-gray-100">
+      {/* ===== 1. Clean Top Header ===== */}
+      <header className="flex items-center justify-between px-4 py-2 bg-gray-950/90 backdrop-blur-md border-b border-gray-800/80 shrink-0 z-30">
         <div className="flex items-center gap-3">
-          {/* NASA logo placeholder */}
-          <div className="w-10 h-10 rounded-full bg-blue-900 flex items-center justify-center text-xs font-bold text-cyan-400 border border-cyan-800">
+          {/* NASA Badge */}
+          <div className="w-8 h-8 rounded-full bg-blue-900/90 flex items-center justify-center text-[10px] font-black tracking-widest text-cyan-400 border border-cyan-800 shadow-[0_0_10px_rgba(56,189,248,0.3)]">
             NASA
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-wide text-cyan-400">
-              SPHEREx Time-Domain Sky Explorer
-            </h1>
-            <p className="text-[10px] text-gray-500 -mt-0.5">
-              Near-Infrared All-Sky Survey · 102 Spectral Bands · 0.75–5.0 µm
+            <div className="flex items-center gap-2">
+              <h1 className="text-sm font-bold tracking-wider text-cyan-400 uppercase">
+                SPHEREx Time-Domain Sky Explorer
+              </h1>
+              <span className="hidden sm:inline-block text-[9px] font-mono px-1.5 py-0.2 rounded-full bg-cyan-950/80 border border-cyan-800/70 text-cyan-300">
+                102 Bands · 0.75–5.0 µm
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-500">
+              NASA Space Apps Challenge 2026: Planet X & SPHEREx
             </p>
           </div>
         </div>
 
-        {/* Target quick-select and guide button */}
-        <div className="flex items-center gap-2">
+        {/* ── Center Quick-Select Bar (Sleek Pills) ── */}
+        <div className="flex-1 max-w-2xl mx-4 hidden md:block">
           <TargetBar
             apiBase={API_BASE}
             selectedTarget={selectedTarget}
             onSelect={handleSelectTarget}
           />
+        </div>
+
+        {/* ── Right Actions ── */}
+        <div className="flex items-center gap-2">
+          {/* Citizen Guide Button */}
           <button
             onClick={() => setShowGuide(true)}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800 text-cyan-300 text-xs font-semibold shrink-0 transition-colors"
-            title="How to Hunt for Planet X Guide"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-900/80 hover:bg-gray-800 border border-gray-800 hover:border-gray-700 text-gray-300 hover:text-white text-xs font-medium transition-all"
+            title="How to Hunt for Planet X Citizen Science Tutorial"
           >
-            <span>📖</span>
-            <span className="hidden md:inline">Citizen Guide</span>
+            <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden lg:inline">Citizen Guide</span>
+          </button>
+
+          {/* Settings & Filters Button */}
+          <button
+            onClick={() => setShowSettings(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-950/40 hover:bg-cyan-900/50 border border-cyan-800/80 text-cyan-300 text-xs font-semibold shadow-sm transition-all"
+            title="Open Advanced Filters & Settings"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">Settings & Filters</span>
           </button>
         </div>
       </header>
 
-      {/* ===== Main content grid ===== */}
-      <div className="flex-1 grid grid-cols-[280px_1fr_340px] grid-rows-[1fr_1fr] gap-1 p-1 min-h-0">
-        {/* Left sidebar — spans both rows */}
-        <aside className="row-span-2 bg-gray-900/60 rounded-lg border border-gray-800 overflow-y-auto p-3">
-          <ControlPanel
-            fov={fov}
-            onFovChange={setFov}
-            mode={mode}
-            onModeChange={setMode}
-            band={band}
-            onBandChange={setBand}
-            stretch={stretch}
-            onStretchChange={setStretch}
-            blinkSpeed={blinkSpeed}
-            onBlinkSpeedChange={setBlinkSpeed}
-            showAnomalies={showAnomalies}
-            onShowAnomaliesChange={setShowAnomalies}
-            ra={ra}
-            dec={dec}
-            onCoordsChange={handleCoordsChange}
-          />
-        </aside>
+      {/* TargetBar on mobile/tablet if screen is small */}
+      <div className="block md:hidden bg-gray-950 px-2 py-1 border-b border-gray-800 overflow-x-auto">
+        <TargetBar
+          apiBase={API_BASE}
+          selectedTarget={selectedTarget}
+          onSelect={handleSelectTarget}
+        />
+      </div>
 
-        {/* Center-top: Cutout viewer */}
-        <main className="bg-gray-900/40 rounded-lg border border-gray-800 overflow-hidden flex items-center justify-center relative">
+      {/* ===== 2. Immersive Dual-Pane Sky Canvas ===== */}
+      <div className="flex-1 flex flex-col md:flex-row relative min-h-0 p-2 gap-2 overflow-hidden">
+        {/* Left Viewport: SPHEREx Multi-Epoch Cutout Canvas */}
+        <div className="flex-1 relative rounded-xl overflow-hidden border border-gray-800/80 bg-gray-950/60 flex items-center justify-center min-h-[300px]">
           {loading && (
-            <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center">
+            <div className="absolute inset-0 bg-black/60 z-20 flex flex-col items-center justify-center gap-2">
               <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs font-mono text-cyan-300">Extracting SPHEREx Cutout...</span>
             </div>
           )}
+
           <EpochViewer
             cutoutData={cutoutData}
             mode={mode}
@@ -305,10 +318,10 @@ export default function App() {
             error={error}
             onPixelClick={handleCoordsChange}
           />
-        </main>
+        </div>
 
-        {/* Right panel: Aladin sky map — spans both rows */}
-        <aside className="row-span-2 bg-gray-900/60 rounded-lg border border-gray-800 overflow-hidden">
+        {/* Right Viewport: Aladin Lite Interactive Sky Map */}
+        <div className="flex-1 relative rounded-xl overflow-hidden border border-gray-800/80 bg-gray-950/60 min-h-[300px]">
           <AladinViewer
             ra={ra}
             dec={dec}
@@ -316,20 +329,39 @@ export default function App() {
             onCoordsChange={handleCoordsChange}
             selectedTarget={selectedTarget}
           />
-        </aside>
+        </div>
 
-        {/* Center-bottom: Spectrum chart */}
-        <div className="bg-gray-900/40 rounded-lg border border-gray-800 overflow-hidden">
+        {/* ── 3. Centered Sleek Floating Action Toolbar ── */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+          <FloatingToolbar
+            mode={mode}
+            setMode={setMode}
+            showAnomalies={showAnomalies}
+            setShowAnomalies={setShowAnomalies}
+            showSpectrum={showSpectrum}
+            setShowSpectrum={setShowSpectrum}
+            onOpenSettings={() => setShowSettings(true)}
+            band={band}
+            wavelength={wavelength}
+          />
+        </div>
+      </div>
+
+      {/* ===== 4. Collapsible 102-Band Spectrogram Drawer ===== */}
+      {showSpectrum && (
+        <div className="h-64 border-t border-gray-800/80 bg-gray-950/95 backdrop-blur-xl shrink-0 z-20 transition-all duration-300">
           <SpectrumChart
             spectralData={spectralData}
             band={band}
             onBandChange={setBand}
             mode={mode}
+            loading={loading}
+            onClose={() => setShowSpectrum(false)}
           />
         </div>
-      </div>
+      )}
 
-      {/* ===== Status bar ===== */}
+      {/* ===== 5. Bottom Status Bar ===== */}
       <StatusBar
         ra={ra}
         dec={dec}
@@ -341,9 +373,27 @@ export default function App() {
         error={error}
       />
 
-      {/* ===== How-To Guide overlay ===== */}
+      {/* ===== 6. Advanced Settings & Filters Slide-Over Drawer ===== */}
+      <SettingsDrawer
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        fov={fov}
+        onFovChange={setFov}
+        band={band}
+        onBandChange={setBand}
+        stretch={stretch}
+        onStretchChange={setStretch}
+        blinkSpeed={blinkSpeed}
+        onBlinkSpeedChange={setBlinkSpeed}
+        mode={mode}
+        ra={ra}
+        dec={dec}
+        onCoordsChange={handleCoordsChange}
+      />
+
+      {/* ===== 7. Citizen Science How-To Guide ===== */}
       {showGuide && (
-        <HowToGuide onClose={() => setShowGuide(false)} />
+        <HowToGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
       )}
     </div>
   );

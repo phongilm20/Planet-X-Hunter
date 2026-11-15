@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SPHEREX_BANDS, bandToWavelength } from '../data/targets';
-import { Activity, Eye, AlertTriangle } from 'lucide-react';
+import { Activity, Eye, AlertTriangle, X } from 'lucide-react';
 
 const FLAG_CONFIG = {
   SOURCE_CONFUSION: { symbol: 'triangle-up', color: '#F97316', label: 'Source Confusion' },
@@ -16,6 +16,7 @@ export default function SpectrumChart({
   onBandChange,
   loading = false,
   showFlags: initialShowFlags = true,
+  onClose,
 }) {
   const [showFlags, setShowFlags] = useState(initialShowFlags);
   const chartContainerRef = useRef(null);
@@ -285,6 +286,16 @@ export default function SpectrumChart({
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-800 text-cyan-300">
             Selected: Band #{band} (λ={currentWavelength.toFixed(3)} µm)
           </span>
+
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1 rounded text-gray-400 hover:text-white hover:bg-gray-800/80 transition-colors ml-1"
+              title="Minimize Spectrum Drawer"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

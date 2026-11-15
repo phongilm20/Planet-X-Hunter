@@ -312,18 +312,17 @@ export default function AladinViewer({
   }
 
   return (
-    <div style={{ width: '100%' }}>
+    <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: 280, borderRadius: 12, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', background: '#0B0F19' }}>
       {/* ── Sky viewer ───────────────────────────────────────────── */}
       <div
         ref={containerRef}
         style={{
-          position: 'relative',
+          position: 'absolute',
+          inset: 0,
           width: '100%',
-          height: 400,
-          border: '1px solid #334155',
-          borderRadius: 8,
+          height: '100%',
           overflow: 'hidden',
-          background: '#0F172A',
+          background: '#0B0F19',
         }}
       >
         <div
@@ -358,57 +357,60 @@ export default function AladinViewer({
         </svg>
       </div>
 
-      {/* ── Controls ─────────────────────────────────────────────── */}
+      {/* ── Floating Controls HUD at bottom ────────────────────────── */}
       <div
         style={{
+          position: 'absolute',
+          bottom: 12,
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: 8,
-          marginTop: 8,
+          gap: 6,
+          padding: '4px 10px',
+          borderRadius: 9999,
+          background: 'rgba(11, 15, 25, 0.85)',
+          backdropFilter: 'blur(12px)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+          zIndex: 10,
         }}
       >
         {/* Survey selector */}
-        <span style={{ color: '#94A3B8', fontSize: 12, marginRight: 4 }}>
-          Survey:
-        </span>
         {SURVEYS.map((s) => (
           <button
             key={s.id}
             onClick={() => handleSurveyChange(s.id)}
             style={{
-              padding: '4px 10px',
-              fontSize: 12,
-              borderRadius: 4,
-              border: activeSurvey === s.id ? '1px solid #F59E0B' : '1px solid #334155',
-              background: activeSurvey === s.id ? '#292524' : '#1E293B',
-              color: activeSurvey === s.id ? '#F59E0B' : '#CBD5E1',
+              padding: '3px 9px',
+              fontSize: 11,
+              fontWeight: 500,
+              borderRadius: 9999,
+              border: activeSurvey === s.id ? '1px solid #F59E0B' : '1px solid transparent',
+              background: activeSurvey === s.id ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+              color: activeSurvey === s.id ? '#FBBF24' : '#94A3B8',
               cursor: 'pointer',
+              transition: 'all 0.2s',
             }}
           >
             {s.label}
           </button>
         ))}
 
+        <div style={{ width: 1, height: 14, background: 'rgba(255,255,255,0.15)', margin: '0 2px' }} />
+
         {/* Catalog toggles */}
-        <span
-          style={{
-            color: '#94A3B8',
-            fontSize: 12,
-            marginLeft: 12,
-            marginRight: 4,
-          }}
-        >
-          Catalogs:
-        </span>
         <label
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            fontSize: 12,
-            color: '#CBD5E1',
+            fontSize: 11,
+            color: showGaia ? '#38BDF8' : '#94A3B8',
             cursor: 'pointer',
+            padding: '2px 6px',
+            userSelect: 'none',
           }}
         >
           <input
@@ -416,11 +418,11 @@ export default function AladinViewer({
             checked={showGaia}
             onChange={(e) => {
               setShowGaia(e.target.checked);
-              // Show again if previously hidden
               if (e.target.checked && gaiaCatalogRef.current) {
                 gaiaCatalogRef.current.show();
               }
             }}
+            style={{ accentColor: '#38BDF8' }}
           />
           Gaia DR3
         </label>
@@ -429,9 +431,11 @@ export default function AladinViewer({
             display: 'flex',
             alignItems: 'center',
             gap: 4,
-            fontSize: 12,
-            color: '#CBD5E1',
+            fontSize: 11,
+            color: showWise ? '#FB923C' : '#94A3B8',
             cursor: 'pointer',
+            padding: '2px 6px',
+            userSelect: 'none',
           }}
         >
           <input
@@ -443,6 +447,7 @@ export default function AladinViewer({
                 wiseCatalogRef.current.show();
               }
             }}
+            style={{ accentColor: '#FB923C' }}
           />
           AllWISE
         </label>

@@ -138,14 +138,14 @@ export default function EpochViewer({
       style={{
         position: 'relative',
         width: '100%',
-        maxWidth: 512,
-        aspectRatio: '1 / 1',
-        background: '#0a0a1a',
-        borderRadius: 8,
+        height: '100%',
+        minHeight: 280,
+        background: '#070A12',
+        borderRadius: 12,
         overflow: 'hidden',
         cursor: hasImage ? 'crosshair' : 'default',
         userSelect: 'none',
-        border: '1px solid rgba(255,255,255,0.08)',
+        border: '1px solid rgba(255,255,255,0.06)',
       }}
     >
       {/* ── Empty state ─────────────────────────────────────────── */}
