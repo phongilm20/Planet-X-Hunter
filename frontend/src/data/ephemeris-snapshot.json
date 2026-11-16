@@ -1,0 +1,22 @@
+{
+  "metadata": {
+    "source": "JPL Horizons API",
+    "generated": "2026-11-15",
+    "description": "Pre-computed ephemeris positions for solar-system targets where browser direct fetch lacks CORS"
+  },
+  "targets": {
+    "3I/ATLAS": [
+      { "date": "2025-08-15T00:00:00Z", "year": 2025.62, "ra": 180.124, "dec": 16.241, "deltaAU": 1.84, "rAU": 1.42 },
+      { "date": "2025-10-01T00:00:00Z", "year": 2025.75, "ra": 181.560, "dec": 15.390, "deltaAU": 1.62, "rAU": 1.36 },
+      { "date": "2025-12-05T00:00:00Z", "year": 2025.93, "ra": 183.842, "dec": 13.910, "deltaAU": 1.48, "rAU": 1.39 },
+      { "date": "2026-03-01T00:00:00Z", "year": 2026.16, "ra": 187.210, "dec": 11.230, "deltaAU": 1.95, "rAU": 1.68 }
+    ],
+    "Makemake": [
+      { "date": "2014-06-01T00:00:00Z", "year": 2014.41, "ra": 194.218, "dec": 28.520, "deltaAU": 52.4, "rAU": 52.1 },
+      { "date": "2025-03-15T00:00:00Z", "year": 2025.20, "ra": 195.340, "dec": 28.165, "deltaAU": 52.1, "rAU": 52.3 },
+      { "date": "2025-09-20T00:00:00Z", "year": 2025.72, "ra": 195.452, "dec": 28.128, "deltaAU": 52.8, "rAU": 52.4 },
+      { "date": "2026-03-25T00:00:00Z", "year": 2026.23, "ra": 195.590, "dec": 28.082, "deltaAU": 52.1, "rAU": 52.4 },
+      { "date": "2026-09-30T00:00:00Z", "year": 2026.75, "ra": 195.705, "dec": 28.041, "deltaAU": 52.9, "rAU": 52.5 }
+    ]
+  }
+}

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>NASA / CDS / ESA / JPL CORS Probe</title>
+  <style>
+    body { font-family: monospace; background: #0B0E14; color: #E6EAF2; padding: 24px; line-height: 1.6; }
+    h1 { color: #4DA3FF; font-size: 18px; margin-bottom: 8px; }
+    .probe-card { background: #121722; border: 1px solid #262E40; border-radius: 6px; padding: 12px 16px; margin-bottom: 12px; }
+    .pass { color: #4ADE80; font-weight: bold; }
+    .fail { color: #F87171; font-weight: bold; }
+    .pending { color: #FBBF24; }
+    pre { background: #070A10; padding: 8px; border-radius: 4px; overflow-x: auto; font-size: 11px; max-height: 200px; }
+    button { background: #4DA3FF; color: #0B0E14; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>SPHEREx Sky Tracker — Browser CORS Probe</h1>
+  <p>Testing live browser-fetchability to NASA/IPAC IRSA, CDS Sesame/SIMBAD, ESA Gaia, and JPL Horizons.</p>
+  <button id="runBtn" onclick="runAllProbes()">Re-run All Probes</button>
+  <div id="results" style="margin-top: 16px;"></div>
+
+  <script>
+    const PROBES = [
+      {
+        name: '1. IRSA TAP sync (Discover TAP tables)',
+        url: 'https://irsa.ipac.caltech.edu/TAP/sync?QUERY=SELECT+table_name+FROM+TAP_SCHEMA.tables+WHERE+table_name+LIKE+%27%25spherex%25%27&FORMAT=json',
+        method: 'GET'
+      },
+      {
+        name: '2. IRSA SIA2 (SPHEREx QR2 query)',
+        url: 'https://irsa.ipac.caltech.edu/SIA?COLLECTION=spherex_qr2&POS=CIRCLE+133.795+-7.245+0.1&RESPONSEFORMAT=CSV',
+        method: 'GET'
+      },
+      {
+        name: '3. CDS Sesame Name Resolver (WISE 0855)',
+        url: 'https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?WISE%200855-0714',
+        method: 'GET'
+      },
+      {
+        name: '4. CDS SIMBAD TAP (Barnard\'s Star)',
+        url: 'https://simbad.cds.unistra.fr/simbad/sim-tap/sync?request=doQuery&lang=adql&format=json&query=SELECT+main_id,ra,dec,pmra,pmdec,plx_value+FROM+basic+JOIN+ident+ON+oid=oidref+WHERE+id=%27Barnard%27%27s+Star%27',
+        method: 'GET'
+      },
+      {
+        name: '5. ESA Gaia TAP (Nearby stars in 0.05 deg)',
+        url: 'https://gea.esac.esa.int/tap-server/tap/sync?request=doQuery&lang=adql&format=json&query=SELECT+source_id,ra,dec,phot_g_mean_mag,pmra,pmdec+FROM+gaiadr3.gaia_source+WHERE+1=CONTAINS(POINT(%27ICRS%27,ra,dec),CIRCLE(%27ICRS%27,133.795,-7.245,0.05))',
+        method: 'GET'
+      },
+      {
+        name: '6. JPL Horizons API (3I/ATLAS ephemeris)',
+        url: 'https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27DES=3I%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27&EPHEM_TYPE=%27OBSERVER%27&CENTER=%27500@399%27&START_TIME=%272025-08-01%27&STOP_TIME=%272025-12-31%27&STEP_SIZE=%2710d%27&QUANTITIES=%271,3%27',
+        method: 'GET'
+      }
+    ];
+
+    async function testProbe(probe) {
+      const start = performance.now();
+      try {
+        const res = await fetch(probe.url, { method: probe.method, signal: AbortSignal.timeout(15000) });
+        const text = await res.text();
+        const duration = Math.round(performance.now() - start);
+        return {
+          ok: res.ok,
+          status: res.status,
+          duration,
+          cors: true,
+          preview: text.slice(0, 500)
+        };
+      } catch (err) {
+        const duration = Math.round(performance.now() - start);
+        return {
+          ok: false,
+          status: err.name,
+          duration,
+          cors: false,
+          error: err.message
+        };
+      }
+    }
+
+    async function runAllProbes() {
+      const container = document.getElementById('results');
+      container.innerHTML = '<p class="pending">Testing live endpoints from browser context…</p>';
+      
+      const cards = [];
+      for (const p of PROBES) {
+        const card = document.createElement('div');
+        card.className = 'probe-card';
+        card.innerHTML = `<strong>${p.name}</strong><br><span class="pending">Testing…</span>`;
+        container.appendChild(card);
+        cards.push({ p, card });
+      }
+
+      for (const { p, card } of cards) {
+        const res = await testProbe(p);
+        if (res.ok) {
+          card.innerHTML = `
+            <div><strong>${p.name}</strong> — <span class="pass">✅ PASS</span> (Status ${res.status}, ${res.duration}ms)</div>
+            <div style="font-size: 11px; color: #98A2B8; margin-top: 4px;">URL: ${p.url}</div>
+            <pre>${escapeHtml(res.preview)}</pre>
+          `;
+        } else {
+          card.innerHTML = `
+            <div><strong>${p.name}</strong> — <span class="fail">❌ FAIL</span> (${res.status}, ${res.duration}ms)</div>
+            <div style="font-size: 11px; color: #98A2B8; margin-top: 4px;">URL: ${p.url}</div>
+            <div style="color: #F87171; font-size: 12px; margin-top: 4px;">Error: ${res.error || 'HTTP ' + res.status}</div>
+          `;
+        }
+      }
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    }
+
+    window.onload = runAllProbes;
+  </script>
+</body>
+</html>
