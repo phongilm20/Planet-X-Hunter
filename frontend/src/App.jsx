@@ -84,7 +84,7 @@ export default function App() {
     async function loadFieldData() {
       try {
         const [obsRes, starsRes] = await Promise.all([
-          fetchSpherexObservations(target.ra, target.dec),
+          fetchSpherexObservations(target.ra, target.dec, 0.08, target.name),
           fetchBackgroundStars(target.ra, target.dec, 0.05)
         ]);
 
@@ -159,6 +159,20 @@ export default function App() {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [trackPoints]);
+
+  // ── Retry handler ──
+  const handleRetry = useCallback(async () => {
+    setObsStatus('loading');
+    const obsRes = await fetchSpherexObservations(target.ra, target.dec, 0.08, target.name, true);
+    setObservations(obsRes.observations || []);
+    setObsStatus(obsRes.status);
+    setObsError(obsRes.error || null);
+    setObsFetchedAt(obsRes.fetchedAtUTC);
+    setDataSource(obsRes.dataSource);
+
+    const track = getTargetPositionsAtEpochs(target, obsRes.observations || []);
+    setTrackPoints(track);
+  }, [target]);
 
   // ── Search handler ──
   const handleSearch = async (query) => {
@@ -294,6 +308,7 @@ export default function App() {
           obsError={obsError}
           obsFetchedAt={obsFetchedAt}
           dataSource={dataSource}
+          onRetry={handleRetry}
           onDownloadCSV={handleDownloadCSV}
         />
       </div>

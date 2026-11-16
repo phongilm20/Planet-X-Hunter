@@ -12,6 +12,7 @@ export default function InfoPanel({
   obsError = null,
   obsFetchedAt = null,
   dataSource = 'NASA/IPAC IRSA',
+  onRetry,
   onDownloadCSV,
 }) {
   const [showPlanetXContext, setShowPlanetXContext] = useState(false);
@@ -109,6 +110,8 @@ export default function InfoPanel({
           observations={observations}
           status={obsStatus}
           errorMessage={obsError}
+          dataSource={dataSource}
+          onRetry={onRetry}
           onDownloadCSV={onDownloadCSV}
         />
       </div>
