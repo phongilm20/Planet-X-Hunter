@@ -2,7 +2,7 @@
 ### NASA Space Apps Challenge 2026: "Planet X and SPHEREx"
 **Citizen Science Multi-Epoch Infrared Sky Viewer, Dipole Anomaly Hunter & 102-Band Spectrophotometric Analyzer**
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com)
+[![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Serverless-22c55e?style=for-the-badge&logo=github)](https://phongilm20.github.io/Planet-X-Hunter/)
 [![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
@@ -28,26 +28,22 @@ Experience the application live in your browser:
 
 ---
 
-## 🚀 1-Command Startup Instructions
+## 🚀 How to Run
 
-### Quick Start
-You can launch both Backend and Frontend with standard tooling:
+### 1. Online (Zero Installation)
+Simply visit the live GitHub Pages link:
+👉 **[https://phongilm20.github.io/Planet-X-Hunter/](https://phongilm20.github.io/Planet-X-Hunter/)**
 
-#### 1. Backend (Python FastAPI)
-```bash
-cd backend
-pip install -r requirements.txt
-python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-*API will run at: `http://localhost:8000` (Swagger docs available at `http://localhost:8000/docs`)*
+### 2. Offline / Local 1-Click Launch
+Double-click [`index.html`](file:///./index.html) in the root directory. It runs locally in Chrome, Edge, or Firefox with zero dependencies or installation.
 
-#### 2. Frontend (React + Vite)
+### 3. Developer Mode (React / Vite)
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-*Web application will run at: `http://localhost:5173`*
+*Vite dev server will run at: `http://localhost:5173`*
 
 ---
 
