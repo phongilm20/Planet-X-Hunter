@@ -1,394 +1,349 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import TopBarAero from './components/TopBarAero';
-import DeepSpaceUniverse3D from './components/DeepSpaceUniverse3D';
-import SolarSystemView3D from './components/SolarSystemView3D';
-import TimelineScrubber from './components/TimelineScrubber';
-import RightPanelAI from './components/RightPanelAI';
-import HowToGuide from './components/HowToGuide';
-import InfraredScannerHUD from './components/InfraredScannerHUD';
-import PlanetXChallengeModal from './components/PlanetXChallengeModal';
-import GuidedMissionBanner from './components/GuidedMissionBanner';
-import { NASA_TARGETS } from './data/targets';
-import { narrator } from './utils/speechNarration';
-
-const API_BASE = '';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Header from './components/Header';
+import TargetList from './components/TargetList';
+import SkyImageViewer from './components/SkyImageViewer';
+import Timeline from './components/Timeline';
+import InfoPanel from './components/InfoPanel';
+import HelpModal from './components/HelpModal';
+import TARGETS_CATALOG from './data/targets.json';
+import { 
+  OBSERVATIONAL_EPOCHS, 
+  getCutout, 
+  getDifferenceCutout, 
+  getCatalogSources,
+  getSpectrum
+} from './data/adapter';
 
 function parseUrlParams() {
   const params = new URLSearchParams(window.location.search);
-  const targetParam = params.get('target');
-  const matchedTarget = NASA_TARGETS.find((t) => t.name === targetParam || t.shortName === targetParam);
+  const targetId = params.get('target');
+  const matchedTarget = TARGETS_CATALOG.find((t) => t.id === targetId || t.commonName === targetId) || TARGETS_CATALOG[0];
 
   return {
-    target: matchedTarget || NASA_TARGETS[0],
-    ra: params.has('ra') ? parseFloat(params.get('ra')) : matchedTarget?.ra || NASA_TARGETS[0].ra,
-    dec: params.has('dec') ? parseFloat(params.get('dec')) : matchedTarget?.dec || NASA_TARGETS[0].dec,
-    year: params.has('year') ? parseFloat(params.get('year')) : 2026.5,
-    palette: params.get('palette') || 'deepspace',
-    viewMode: params.get('view') === 'solarsystem' ? 'solarsystem' : 'deepspace',
+    target: matchedTarget,
+    targetId: matchedTarget.id,
+    ra: params.has('ra') ? parseFloat(params.get('ra')) : matchedTarget.ra.value,
+    dec: params.has('dec') ? parseFloat(params.get('dec')) : matchedTarget.dec.value,
+    epochAId: params.get('epochA') || 'epoch-2014',
+    epochBId: params.get('epochB') || 'epoch-2025-m6',
+    mode: params.get('mode') || 'blink', // 'blink' | 'side-by-side' | 'difference'
+    stretch: params.get('stretch') || 'asinh', // 'linear' | 'asinh' | 'sqrt' | 'log'
+    colormap: params.get('colormap') || 'grayscale', // 'grayscale' | 'inferno' | 'viridis'
+    blinkSpeed: params.has('speed') ? parseFloat(params.get('speed')) : 1.5,
   };
 }
 
 export default function App() {
-  const initParams = useRef(parseUrlParams());
+  const initialParams = useRef(parseUrlParams());
 
-  const [viewMode, setViewMode] = useState(initParams.current.viewMode); // 'deepspace' | 'solarsystem'
-  const [selectedTarget, setSelectedTarget] = useState(initParams.current.target);
-  const [ra, setRa] = useState(initParams.current.ra);
-  const [dec, setDec] = useState(initParams.current.dec);
-  const [year, setYear] = useState(initParams.current.year);
-  const [palette, setPalette] = useState(initParams.current.palette);
-
-  // Warp-Speed Flight Trigger
-  const [isWarping, setIsWarping] = useState(false);
-
-  // Infrared X-Ray Scanner Lens
-  const [isScannerActive, setIsScannerActive] = useState(false);
-
-  // Gamified Planet X Challenge
-  const [isHunting, setIsHunting] = useState(false);
-  const [showDiscoveryModal, setShowDiscoveryModal] = useState(false);
-
-  // Cinematic Guided Mission State
-  const [guidedMission, setGuidedMission] = useState({
-    active: false,
-    stage: 1,
-    title: '',
-    subtitle: '',
-    isMuted: false,
+  // ── Target & Coordinate State ──
+  const [selectedTargetId, setSelectedTargetId] = useState(initialParams.current.targetId);
+  const [currentTarget, setCurrentTarget] = useState(initialParams.current.target);
+  const [targetCoords, setTargetCoords] = useState({
+    ra: initialParams.current.ra,
+    dec: initialParams.current.dec,
   });
 
-  // Telemetry & Spectrometry Data
-  const [spectralData, setSpectralData] = useState(null);
-  const [gaiaStars, setGaiaStars] = useState([]);
-  const [irsaSources, setIrsaSources] = useState([]);
-  const [showGuide, setShowGuide] = useState(false);
+  // ── Epoch & Timeline State ──
+  const [selectedEpochAId, setSelectedEpochAId] = useState(initialParams.current.epochAId);
+  const [selectedEpochBId, setSelectedEpochBId] = useState(initialParams.current.epochBId);
+  const [activeBlinkEpoch, setActiveBlinkEpoch] = useState('A'); // 'A' | 'B'
+  const [isPlayingBlink, setIsPlayingBlink] = useState(true);
+  const [blinkSpeedHz, setBlinkSpeedHz] = useState(initialParams.current.blinkSpeed);
 
-  // Synchronize URL parameters
+  // ── Viewer Display Modes ──
+  const [activeMode, setActiveMode] = useState(initialParams.current.mode);
+  const [stretch, setStretch] = useState(initialParams.current.stretch);
+  const [colormap, setColormap] = useState(initialParams.current.colormap);
+
+  // ── Cutouts & Scientific Data ──
+  const [cutoutA, setCutoutA] = useState(null);
+  const [cutoutB, setCutoutB] = useState(null);
+  const [cutoutDiff, setCutoutDiff] = useState(null);
+  const [spectralData, setSpectralData] = useState(null);
+  const [gaiaSources, setGaiaSources] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // ── UI Modals ──
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  // ── Sync URL parameters ──
   useEffect(() => {
     const params = new URLSearchParams();
-    if (selectedTarget?.name) params.set('target', selectedTarget.name);
-    if (ra != null) params.set('ra', ra.toFixed(5));
-    if (dec != null) params.set('dec', dec.toFixed(5));
-    params.set('year', year.toFixed(1));
-    params.set('palette', palette);
-    params.set('view', viewMode);
+    if (selectedTargetId) params.set('target', selectedTargetId);
+    params.set('ra', targetCoords.ra.toFixed(6));
+    params.set('dec', targetCoords.dec.toFixed(6));
+    params.set('epochA', selectedEpochAId);
+    params.set('epochB', selectedEpochBId);
+    params.set('mode', activeMode);
+    params.set('stretch', stretch);
+    params.set('colormap', colormap);
+    params.set('speed', blinkSpeedHz.toFixed(1));
 
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    window.history.replaceState(null, '', newUrl);
-  }, [selectedTarget, ra, dec, year, palette, viewMode]);
+    window.history.replaceState({}, '', newUrl);
+  }, [
+    selectedTargetId,
+    targetCoords,
+    selectedEpochAId,
+    selectedEpochBId,
+    activeMode,
+    stretch,
+    colormap,
+    blinkSpeedHz,
+  ]);
 
-  // Keyboard shortcut 'L' for Infrared Lens
+  // ── Fetch Cutouts & Data ──
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadData() {
+      setLoading(true);
+      setError(null);
+      try {
+        const [cutA, cutB, cutDiff, spec, sources] = await Promise.all([
+          getCutout(selectedEpochAId, targetCoords.ra, targetCoords.dec, 300, 50),
+          getCutout(selectedEpochBId, targetCoords.ra, targetCoords.dec, 300, 50),
+          getDifferenceCutout(selectedEpochAId, selectedEpochBId, targetCoords.ra, targetCoords.dec, 300, 50),
+          getSpectrum(currentTarget?.commonName || currentTarget?.name || 'Target', targetCoords.ra, targetCoords.dec),
+          getCatalogSources(targetCoords.ra, targetCoords.dec, 0.08),
+        ]);
+
+        if (!isCancelled) {
+          setCutoutA(cutA);
+          setCutoutB(cutB);
+          setCutoutDiff(cutDiff);
+          setSpectralData(spec);
+          setGaiaSources(sources || []);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.error('Failed to load astronomical data:', err);
+          setError('Failed to fetch sky cutouts. Rendering simulated fallback.');
+          setLoading(false);
+        }
+      }
+    }
+
+    loadData();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedEpochAId, selectedEpochBId, targetCoords, currentTarget]);
+
+  // ── Blink Interval Engine ──
+  useEffect(() => {
+    if (activeMode !== 'blink' || !isPlayingBlink) return;
+
+    const intervalMs = Math.max(250, Math.floor(1000 / blinkSpeedHz));
+    const timer = setInterval(() => {
+      setActiveBlinkEpoch((prev) => (prev === 'A' ? 'B' : 'A'));
+    }, intervalMs);
+
+    return () => clearInterval(timer);
+  }, [activeMode, isPlayingBlink, blinkSpeedHz]);
+
+  // ── Keyboard Shortcuts (Space, B, S, D, ArrowLeft, ArrowRight) ──
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.key === 'l' || e.key === 'L') {
-        setIsScannerActive((prev) => !prev);
+      if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsPlayingBlink((prev) => !prev);
+      } else if (e.key === 'b' || e.key === 'B') {
+        setActiveMode('blink');
+      } else if (e.key === 's' || e.key === 'S') {
+        setActiveMode('side-by-side');
+      } else if (e.key === 'd' || e.key === 'D') {
+        setActiveMode('difference');
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        setIsPlayingBlink(false);
+        setActiveBlinkEpoch('A');
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        setIsPlayingBlink(false);
+        setActiveBlinkEpoch('B');
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
-  // Handle Target Selection with Warp Flight
-  const handleSelectTarget = useCallback((target) => {
-    if (!target) return;
-    setViewMode('deepspace');
-    setSelectedTarget(target);
-    setRa(target.ra);
-    setDec(target.dec);
-    setIsWarping(true);
+  // ── Target Switch Handlers ──
+  const handleSelectTarget = useCallback((targetId) => {
+    const found = TARGETS_CATALOG.find((t) => t.id === targetId);
+    if (found) {
+      setSelectedTargetId(found.id);
+      setCurrentTarget(found);
+      setTargetCoords({ ra: found.ra.value, dec: found.dec.value });
+    }
   }, []);
 
-  // Handle Custom RA/Dec Warp
-  const handleCustomCoords = useCallback((newRa, newDec) => {
-    setViewMode('deepspace');
-    const customTarget = {
-      name: `J${newRa.toFixed(2)}${newDec >= 0 ? '+' : ''}${newDec.toFixed(2)}`,
-      shortName: 'Custom Target',
-      ra: newRa,
-      dec: newDec,
-      type: 'Custom Celestial Coordinates',
-      spectralType: 'Unclassified',
-      description: `User-specified celestial position (RA: ${newRa.toFixed(4)}°, Dec: ${newDec.toFixed(4)}°).`,
-      properMotion: { ra: 0.0, dec: 0.0, total: 0.0 },
-      distanceLy: null,
-      color: '#38BDF8',
-      haloColor: '#0EA5E9',
-      starRadius: 1.5,
-      icon: '✨',
-      expectedSignature: 'monopole',
-    };
-    setSelectedTarget(customTarget);
-    setRa(newRa);
-    setDec(newDec);
-    setIsWarping(true);
-  }, []);
-
-  // Trigger Gamified Planet X Anomaly Challenge
-  const handleStartHunt = useCallback(() => {
-    const planetXTarget = NASA_TARGETS.find((t) => t.name.includes('Planet X')) || NASA_TARGETS[5];
-    setViewMode('deepspace');
-    setSelectedTarget(planetXTarget);
-    setRa(planetXTarget.ra);
-    setDec(planetXTarget.dec);
-    setYear(2014.5);
-    setIsWarping(true);
-    setIsScannerActive(true);
-    setIsHunting(true);
-  }, []);
-
-  // ── Cinematic Guided Mission Showcase (4 Stages) ──
-  const guidedMissionTimerRef = useRef(null);
-
-  const startGuidedMission = useCallback(() => {
-    // Stage 1: Solar System Scale & SPHEREx Intro
-    setViewMode('solarsystem');
-    setIsScannerActive(false);
-    setGuidedMission({
-      active: true,
-      stage: 1,
-      title: "Stage 1: The Outer Solar System & SPHEREx Mission",
-      subtitle: "NASA's SPHEREx space telescope surveys the entire sky in 102 near-infrared colors, searching beyond the Kuiper Belt for cold rogue worlds and Planet X.",
-      isMuted: narrator.isMuted,
+  const handleCustomCoords = useCallback((ra, dec, name) => {
+    setSelectedTargetId(null);
+    setCurrentTarget({
+      id: 'custom',
+      commonName: name || `Custom (${ra.toFixed(3)}°, ${dec.toFixed(3)}°)`,
+      name: name || 'User Specified Coordinates',
+      category: 'User Custom Field',
+      ra: { value: ra, unit: 'deg', source: 'User Input' },
+      dec: { value: dec, unit: 'deg', source: 'User Input' },
+      pmRa: { value: 0, unit: 'mas/yr', source: 'N/A' },
+      pmDec: { value: 0, unit: 'mas/yr', source: 'N/A' },
+      parallax: { value: 0, unit: 'mas', source: 'N/A' },
+      spectralType: { value: 'Unknown', source: 'N/A' },
+      distanceLightYears: { value: 0, source: 'N/A' },
+      description: 'User specified sky coordinates.',
     });
-    narrator.speak(
-      "Welcome, Explorer. NASA's SPHEREx space telescope surveys the entire sky in 102 near-infrared colors, hunting for the coldest, most elusive objects in our universe."
-    );
-
-    // Stage 2: Warp to Barnard's Star (at 11s)
-    guidedMissionTimerRef.current = setTimeout(() => {
-      const barnard = NASA_TARGETS.find((t) => t.name.includes('Barnard')) || NASA_TARGETS[1];
-      handleSelectTarget(barnard);
-      setYear(2010.0);
-      setGuidedMission((prev) => ({
-        ...prev,
-        stage: 2,
-        title: "Stage 2: Barnard's Star — Fastest Proper Motion in the Sky",
-        subtitle: "At over ten arcseconds per year, Barnard's Star leaps visibly across the static background starfield between SPHEREx epochs.",
-      }));
-      narrator.speak(
-        "At nearly ten arcseconds per year, Barnard's Star has the fastest proper motion in the sky, visibly leaping past distant background stars."
-      );
-    }, 11000);
-
-    // Stage 3: Warp to R Draconis (at 23s)
-    setTimeout(() => {
-      const rDra = NASA_TARGETS.find((t) => t.name.includes('R Draconis')) || NASA_TARGETS[4];
-      handleSelectTarget(rDra);
-      setYear(2026.0);
-      setGuidedMission((prev) => ({
-        ...prev,
-        stage: 3,
-        title: "Stage 3: R Draconis — Mira Variable Stellar Pulsations",
-        subtitle: "A pulsating red giant star that expands, cools, and brightens every 245 days, producing massive infrared luminosity swings.",
-      }));
-      narrator.speak(
-        "R Draconis, a Mira red giant, rhythmically expands and cools every two hundred and forty-five days, causing dramatic infrared luminosity swings across SPHEREx epochs."
-      );
-    }, 23000);
-
-    // Stage 4: Warp to WISE 0855 with Infrared Lens (at 35s)
-    setTimeout(() => {
-      const wise = NASA_TARGETS.find((t) => t.name.includes('WISE 0855')) || NASA_TARGETS[0];
-      handleSelectTarget(wise);
-      setYear(2026.5);
-      setIsScannerActive(true);
-      setGuidedMission((prev) => ({
-        ...prev,
-        stage: 4,
-        title: "Stage 4: WISE 0855 — Sub-Brown Dwarf & Planet X Analogue",
-        subtitle: "Nearly invisible to optical telescopes, the SPHEREx Infrared Lens unmasks its thermal glow and water ice clouds just 7.3 light-years away.",
-      }));
-      narrator.speak(
-        "And finally, WISE 0855—a planetary-mass sub-brown dwarf just seven light years away. Nearly invisible in optical light, SPHEREx unmasks its thermal glow and water ice clouds, showing us how we will find Planet X."
-      );
-    }, 35000);
-
-    // Complete Mission (at 48s)
-    setTimeout(() => {
-      setGuidedMission((prev) => ({ ...prev, active: false }));
-    }, 48000);
-  }, [handleSelectTarget]);
-
-  const stopGuidedMission = useCallback(() => {
-    narrator.stop();
-    if (guidedMissionTimerRef.current) clearTimeout(guidedMissionTimerRef.current);
-    setGuidedMission((prev) => ({ ...prev, active: false }));
+    setTargetCoords({ ra, dec });
   }, []);
 
-  const toggleMissionMute = useCallback(() => {
-    const isMuted = narrator.toggleMute();
-    setGuidedMission((prev) => ({ ...prev, isMuted }));
-  }, []);
+  // ── Export High-Resolution Annotated PNG ──
+  const handleExportPNG = useCallback(() => {
+    const canvas = document.querySelector('canvas');
+    if (!canvas) return;
 
-  // Fetch Gaia DR3 Astrometry Catalog around active target
-  useEffect(() => {
-    if (ra == null || dec == null) return;
-    const params = new URLSearchParams({
-      ra: ra.toFixed(6),
-      dec: dec.toFixed(6),
-      radius: '0.6',
-    });
+    // Create an export canvas with metadata banner
+    const exportCanvas = document.createElement('canvas');
+    const exportCtx = exportCanvas.getContext('2d');
+    const bannerHeight = 80;
+    
+    exportCanvas.width = canvas.width;
+    exportCanvas.height = canvas.height + bannerHeight;
 
-    fetch(`${API_BASE}/api/gaia?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.sources) setGaiaStars(data.sources);
-      })
-      .catch(() => {});
-  }, [ra, dec]);
+    // Draw main sky frame
+    exportCtx.drawImage(canvas, 0, 0);
 
-  // Fetch NASA IRSA Catalog
-  useEffect(() => {
-    if (ra == null || dec == null) return;
-    const params = new URLSearchParams({
-      ra: ra.toFixed(6),
-      dec: dec.toFixed(6),
-      radius: '0.6',
-    });
+    // Draw metadata banner footer
+    exportCtx.fillStyle = '#0B0E14';
+    exportCtx.fillRect(0, canvas.height, canvas.width, bannerHeight);
+    exportCtx.strokeStyle = '#262E40';
+    exportCtx.lineWidth = 1;
+    exportCtx.beginPath();
+    exportCtx.moveTo(0, canvas.height);
+    exportCtx.lineTo(canvas.width, canvas.height);
+    exportCtx.stroke();
 
-    fetch(`${API_BASE}/api/irsa_query?${params}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.sources) setIrsaSources(data.sources);
-      })
-      .catch(() => {});
-  }, [ra, dec]);
+    // Text labels
+    exportCtx.fillStyle = '#E6EAF2';
+    exportCtx.font = 'bold 14px "Space Grotesk", sans-serif';
+    const targetTitle = currentTarget?.commonName || 'SPHEREx Observation';
+    exportCtx.fillText(targetTitle, 16, canvas.height + 26);
 
-  // Fetch 102-Band SPHEREx Spectrum
-  useEffect(() => {
-    if (ra == null || dec == null) return;
-    const params = new URLSearchParams({
-      ra: ra.toFixed(6),
-      dec: dec.toFixed(6),
-      epoch: '5',
-    });
+    exportCtx.fillStyle = '#98A2B8';
+    exportCtx.font = '11px "JetBrains Mono", monospace';
+    const coordsStr = `RA: ${targetCoords.ra.toFixed(5)}° · Dec: ${targetCoords.dec.toFixed(5)}° · Scale: 6.15″/px`;
+    exportCtx.fillText(coordsStr, 16, canvas.height + 46);
 
-    fetch(`${API_BASE}/api/spectrum?${params}`)
-      .then((r) => r.json())
-      .then(setSpectralData)
-      .catch(() => {});
-  }, [ra, dec]);
+    const epA = OBSERVATIONAL_EPOCHS.find((e) => e.id === selectedEpochAId);
+    const epB = OBSERVATIONAL_EPOCHS.find((e) => e.id === selectedEpochBId);
+    const epochStr = `Epoch A: ${epA?.shortLabel || 'A'} | Epoch B: ${epB?.shortLabel || 'B'} · Mode: ${activeMode.toUpperCase()}`;
+    exportCtx.fillText(epochStr, 16, canvas.height + 66);
+
+    // Provenance stamp
+    const prov = (cutoutA?.provenance || 'CACHED').toUpperCase();
+    exportCtx.fillStyle = '#4DA3FF';
+    exportCtx.font = 'bold 11px "JetBrains Mono", monospace';
+    const provStr = `[${prov}] SPHEREx Time-Domain Sky Explorer · NASA Space Apps 2026`;
+    const provWidth = exportCtx.measureText(provStr).width;
+    exportCtx.fillText(provStr, exportCanvas.width - provWidth - 16, canvas.height + 46);
+
+    // Trigger download
+    const link = document.createElement('a');
+    link.download = `${(currentTarget?.commonName || 'sky-cutout').replace(/\s+/g, '_')}_SPHEREx_${activeMode}.png`;
+    link.href = exportCanvas.toDataURL('image/png');
+    link.click();
+  }, [currentTarget, targetCoords, selectedEpochAId, selectedEpochBId, activeMode, cutoutA]);
+
+  const activeProvenance = (cutoutA?.provenance || 'cached').toUpperCase();
+  const currentEpochA = OBSERVATIONAL_EPOCHS.find((e) => e.id === selectedEpochAId) || OBSERVATIONAL_EPOCHS[0];
+  const currentEpochB = OBSERVATIONAL_EPOCHS.find((e) => e.id === selectedEpochBId) || OBSERVATIONAL_EPOCHS[1];
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden font-sans select-none">
-      
-      {/* ── 1. Top Floating Glass Header Bar ── */}
-      <TopBarAero
-        selectedTarget={selectedTarget}
-        onSelectTarget={handleSelectTarget}
-        palette={palette}
-        setPalette={setPalette}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onOpenGuide={() => setShowGuide(true)}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-obs-bg text-obs-text font-sans antialiased">
+      {/* ── Top Header Bar ── */}
+      <Header
         onCustomCoords={handleCustomCoords}
-        onStartHunt={handleStartHunt}
-        onStartGuidedMission={startGuidedMission}
+        onExportPNG={handleExportPNG}
+        onOpenHelp={() => setIsHelpOpen(true)}
+        activeMode={activeMode}
+        provenance={activeProvenance}
       />
 
-      {/* ── 2. Cinematic Guided Mission Subtitle Banner ── */}
-      {guidedMission.active && (
-        <GuidedMissionBanner
-          stage={guidedMission.stage}
-          title={guidedMission.title}
-          subtitle={guidedMission.subtitle}
-          isMuted={guidedMission.isMuted}
-          onToggleMute={toggleMissionMute}
-          onStop={stopGuidedMission}
+      {/* ── Desktop 3-Column Observatory Main View ── */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative min-h-0">
+        
+        {/* Left Column: Target Catalog Rail */}
+        <TargetList
+          selectedTargetId={selectedTargetId}
+          onSelectTarget={handleSelectTarget}
+          onCustomCoords={handleCustomCoords}
         />
-      )}
 
-      {/* ── 3. Main 3D Viewport (Deep Space vs Solar System Scale) ── */}
-      <main className="w-full h-full">
-        {viewMode === 'solarsystem' ? (
-          <SolarSystemView3D
-            onSelectTarget={handleSelectTarget}
-            onReturnToDeepSpace={() => setViewMode('deepspace')}
+        {/* Center Column: Sky Image Viewer (Blink / Side-by-Side / Diff) */}
+        <main className="flex-1 flex flex-col min-w-0 bg-obs-bg relative">
+          <SkyImageViewer
+            mode={activeMode}
+            onModeChange={setActiveMode}
+            cutoutA={cutoutA}
+            cutoutB={cutoutB}
+            cutoutDiff={cutoutDiff}
+            loading={loading}
+            error={error}
+            target={currentTarget}
+            targetCoords={targetCoords}
+            gaiaSources={gaiaSources}
+            stretch={stretch}
+            onStretchChange={setStretch}
+            colormap={colormap}
+            onColormapChange={setColormap}
+            blinkSpeedHz={blinkSpeedHz}
+            onBlinkSpeedChange={setBlinkSpeedHz}
+            activeBlinkEpoch={activeBlinkEpoch}
+            onToggleBlinkEpoch={() => {
+              setIsPlayingBlink(false);
+              setActiveBlinkEpoch((prev) => (prev === 'A' ? 'B' : 'A'));
+            }}
           />
-        ) : (
-          <DeepSpaceUniverse3D
-            target={selectedTarget}
-            year={year}
-            onYearChange={setYear}
-            gaiaStars={gaiaStars}
-            palette={palette}
-            isWarping={isWarping}
-            onWarpComplete={() => setIsWarping(false)}
+
+          {/* Bottom Rail: Discrete Epoch Timeline & Blink Scrubber */}
+          <Timeline
+            epochs={OBSERVATIONAL_EPOCHS}
+            selectedEpochAId={selectedEpochAId}
+            onSelectEpochA={setSelectedEpochAId}
+            selectedEpochBId={selectedEpochBId}
+            onSelectEpochB={setSelectedEpochBId}
+            activeBlinkEpoch={activeBlinkEpoch}
+            isPlayingBlink={isPlayingBlink}
+            onTogglePlayBlink={() => setIsPlayingBlink((prev) => !prev)}
+            blinkSpeedHz={blinkSpeedHz}
+            onBlinkSpeedChange={setBlinkSpeedHz}
+            onStepBlink={(direction) => {
+              setIsPlayingBlink(false);
+              setActiveBlinkEpoch(direction === 'left' ? 'A' : 'B');
+            }}
+            target={currentTarget}
           />
-        )}
-      </main>
+        </main>
 
-      {/* ── 4. Cursor Magic Lens: SPHEREx Infrared Scanner HUD ── */}
-      <InfraredScannerHUD
-        isActive={isScannerActive}
-        onToggle={() => setIsScannerActive(!isScannerActive)}
-        isHunting={isHunting}
-        anomalyDistance={isHunting ? 0.05 : 0.6} // In hunt mode, anomaly is right in sight
-        onLockAnomaly={() => setShowDiscoveryModal(true)}
-      />
-
-      {/* ── 5. Gamified Discovery Challenge HUD (When Hunting Planet X) ── */}
-      {isHunting && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 px-5 py-2.5 rounded-full bg-slate-950/90 border border-cyan-400 text-cyan-200 shadow-2xl flex items-center gap-3 backdrop-blur-xl animate-bounce">
-          <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-          <span className="text-xs font-black tracking-wider uppercase">
-            Planet X Hunt: Scan with Infrared Lens & Click Anomaly
-          </span>
-          <button
-            onClick={() => setShowDiscoveryModal(true)}
-            className="px-3 py-1 rounded-full bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black shadow transition-all"
-          >
-            Lock Signal 🎯
-          </button>
-          <button
-            onClick={() => setIsHunting(false)}
-            className="text-xs text-slate-400 hover:text-white"
-          >
-            ✕ Exit
-          </button>
-        </div>
-      )}
-
-      {/* ── 6. Floating Astronomical Timeline Scrubber (Bottom Left) ── */}
-      {viewMode === 'deepspace' && (
-        <TimelineScrubber
-          year={year}
-          onYearChange={setYear}
-          target={selectedTarget}
-        />
-      )}
-
-      {/* ── 7. Sleek Right-Side Floating AI Assistant Panel (30% Width) ── */}
-      {viewMode === 'deepspace' && (
-        <RightPanelAI
-          target={selectedTarget}
+        {/* Right Column: Astrophysical Context & 102-Band NIR Spectrum */}
+        <InfoPanel
+          target={currentTarget}
+          targetCoords={targetCoords}
+          epochA={currentEpochA}
+          epochB={currentEpochB}
           spectralData={spectralData}
-          gaiaStars={gaiaStars}
-          irsaSources={irsaSources}
-          year={year}
         />
-      )}
+      </div>
 
-      {/* ── 8. Official NASA Citizen Scientist Discovery Report Modal ── */}
-      <PlanetXChallengeModal
-        isOpen={showDiscoveryModal}
-        onClose={() => {
-          setShowDiscoveryModal(false);
-          setIsHunting(false);
-        }}
-        onExploreIn3D={() => {
-          setShowDiscoveryModal(false);
-          setIsHunting(false);
-          setViewMode('solarsystem');
-        }}
-      />
-
-      {/* ── 9. Citizen Science Interactive How-To Guide Modal ── */}
-      {showGuide && (
-        <HowToGuide isOpen={showGuide} onClose={() => setShowGuide(false)} />
-      )}
-
+      {/* ── Help & Methodology Modal ── */}
+      <HelpModal isOpen={isHelpOpen} onClose={() => setIsHelpOpen(false)} />
     </div>
   );
 }
