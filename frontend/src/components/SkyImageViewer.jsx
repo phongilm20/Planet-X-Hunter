@@ -585,7 +585,7 @@ export default function SkyImageViewer({
 
         <div className="flex items-center gap-3">
           <span>Zoom: {(zoom * 100).toFixed(0)}%</span>
-          <span>Field: {(cutoutA?.stats ? `${(cutoutA.width * SPHEREx_PIXEL_SCALE_ARCSEC / 60).toFixed(1)}′` : '26.2′')}</span>
+          <span>Field: {(cutoutA?.stats ? `${(cutoutA.width * SPHEREX_PIXEL_SCALE_ARCSEC / 60).toFixed(1)}′` : '26.2′')}</span>
         </div>
       </div>
     </div>

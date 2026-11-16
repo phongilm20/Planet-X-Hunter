@@ -5,6 +5,7 @@
 
 // SPHEREx nominal detector pixel scale
 export const SPHEREX_PIXEL_SCALE_ARCSEC = 6.15; // 6.15 arcseconds per pixel
+export const SPHEREx_PIXEL_SCALE_ARCSEC = 6.15; // Alias to prevent casing typos
 
 /**
  * Compute proper-motion displacement between two epochs
