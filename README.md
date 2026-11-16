@@ -76,7 +76,9 @@ This application is **100% serverless** with zero backend, zero Node.js dependen
 | **Planet X Candidate** | Outer Solar System Planet | $\sim 420\text{ AU}$ | $\sim 38\text{ K}$ | Slow 6-month dipole ($3.82''$), invisible in optical/Gaia, strong thermal emission at $4.2\,\mu\text{m}$. |
 | **WISE 0855-0714** | Sub-Stellar Y-Dwarf | $7.27\text{ ly}$ | $\sim 250\text{ K}$ | Extreme proper motion ($8.13''/\text{yr}$), deep Methane ($\text{CH}_4$) absorption dips at $1.6\,\mu\text{m}$ and $3.3\,\mu\text{m}$. |
 | **Barnard's Star** | Nearby M-Dwarf Star | $5.96\text{ ly}$ | $\sim 3,100\text{ K}$ | Fastest proper motion star known ($10.3''/\text{yr}$), matched in Gaia DR3 optical astrometry. |
+| **Epsilon Indi B** | Binary Brown Dwarf (T1+T6) | $11.83\text{ ly}$ | $\sim 1,100\text{ K}$ | High proper motion dipole ($4.70''/\text{yr}$) orbiting Eps Ind A with prominent near-IR $\text{CH}_4$ absorption. |
 | **R Draconis** | Mira Pulsating Red Giant | $2,100\text{ ly}$ | $\sim 2,800\text{ K}$ | **Monopole Anomaly:** Position stays fixed, but flux oscillates over 245-day cycle. |
+| **RW Aurigae** | T Tauri Variable Binary | $530\text{ ly}$ | $\sim 4,800\text{ K}$ | **Monopole Anomaly:** Young stellar object exhibiting severe circumstellar dust dimming events and infrared variability. |
 
 ---
 

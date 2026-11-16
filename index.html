@@ -286,9 +286,17 @@
             <div class="font-semibold text-xs leading-tight">Barnard Star</div>
             <div class="text-[9px] text-slate-500 font-mono">High PM</div>
           </button>
+          <button onclick="setTarget('epsindi')" id="t-epsindi" class="target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200">
+            <div class="font-semibold text-xs leading-tight">Epsilon Indi B</div>
+            <div class="text-[9px] text-slate-500 font-mono">Brown Dwarf</div>
+          </button>
           <button onclick="setTarget('rdraconis')" id="t-rdraconis" class="target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200">
             <div class="font-semibold text-xs leading-tight">R Draconis</div>
-            <div class="text-[9px] text-slate-500 font-mono">Variable</div>
+            <div class="text-[9px] text-slate-500 font-mono">Mira Var</div>
+          </button>
+          <button onclick="setTarget('rwaurigae')" id="t-rwaurigae" class="target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200">
+            <div class="font-semibold text-xs leading-tight">RW Aurigae</div>
+            <div class="text-[9px] text-slate-500 font-mono">T Tauri Var</div>
           </button>
         </div>
       </div>
@@ -460,6 +468,42 @@
         e1Offset: { x: 0, y: 0 },
         e2Offset: { x: 0, y: 0 },
         spectrumType: "mira"
+      },
+      epsindi: {
+        name: "Epsilon Indi B",
+        ra: "22h 04m 10.6s",
+        dec: "-56° 46' 58.2\"",
+        raDeg: 331.0441,
+        decDeg: -56.7828,
+        tag: "Binary Brown Dwarf (T1+T6)",
+        tagStyle: "bg-cyan-950 text-cyan-300 border-cyan-700",
+        sep: "4.70 arcsec/yr",
+        dist: "11.83 Light-Years",
+        temp: "~1,100 Kelvin",
+        gaia: "G=24.0 mag (Near-IR Bright) 🟡",
+        gaiaBadge: "Sub-Stellar Binary 🟢",
+        desc: "Nearby benchmark T-dwarf binary pair (Ba/Bb) orbiting Eps Ind A. High proper motion dipole with strong CH4 absorption.",
+        e1Offset: { x: -22, y: 14 },
+        e2Offset: { x: 22, y: -14 },
+        spectrumType: "tdwarf"
+      },
+      rwaurigae: {
+        name: "RW Aurigae",
+        ra: "05h 07m 49.5s",
+        dec: "+30° 24' 04.8\"",
+        raDeg: 76.9561,
+        decDeg: 30.4013,
+        tag: "T Tauri Variable Star",
+        tagStyle: "bg-orange-950 text-orange-300 border-orange-700",
+        sep: "0.0 arcsec (Stationary)",
+        dist: "530 Light-Years",
+        temp: "~4,800 Kelvin",
+        gaia: "G=10.2 mag (Variable) 🟡",
+        gaiaBadge: "Young Stellar Object 🟡",
+        desc: "Monopole anomaly! Young T Tauri pre-main-sequence binary undergoing dramatic circumstellar dust occultations and multi-epoch infrared variability.",
+        e1Offset: { x: 0, y: 0 },
+        e2Offset: { x: 0, y: 0 },
+        spectrumType: "ttauri"
       }
     };
 
@@ -1370,9 +1414,20 @@
       } else if (currentTarget === 'barnard') {
         fluxMultiplier = 1.4 * Math.exp(-Math.pow(currentWl - 1.6, 2) / 2.0) + 0.35;
         statusHint = "M4V Stellar Photosphere";
+      } else if (currentTarget === 'epsindi') {
+        if (Math.abs(currentWl - 3.3) < 0.28 || Math.abs(currentWl - 1.66) < 0.2) {
+          fluxMultiplier = 0.25;
+          statusHint = "CH₄ Methane Band Absorption (T-Dwarf)";
+        } else {
+          fluxMultiplier = 0.85 + (currentWl / 5.0) * 0.7;
+          statusHint = "T1+T6 Binary Continuum";
+        }
       } else if (currentTarget === 'rdraconis') {
         fluxMultiplier = 1.0 + 0.6 * Math.sin(currentWl * 2.5);
         statusHint = "Mira Pulsation";
+      } else if (currentTarget === 'rwaurigae') {
+        fluxMultiplier = 1.2 + 0.5 * Math.sin(currentWl * 1.8);
+        statusHint = "T Tauri Circumstellar Dust Variability";
       } else if (currentTarget === 'custom') {
         const cObj = TARGETS['custom'];
         fluxMultiplier = cObj && cObj.getFlux ? cObj.getFlux(currentWl) : 0.8;
@@ -1411,12 +1466,12 @@
       const targetAlpha = Math.min(Math.max(fluxMultiplier, 0.15), 1.0);
 
       if (currentMode === 'diff') {
-        if (currentTarget === 'rdraconis') {
-          // Monopole
+        if (currentTarget === 'rdraconis' || currentTarget === 'rwaurigae') {
+          // Monopole Variable Star
           ctx.beginPath();
           ctx.arc(e2X, e2Y, targetRadius * 1.3, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(236, 72, 153, ${targetAlpha})`;
-          ctx.shadowColor = "#ec4899";
+          ctx.fillStyle = currentTarget === 'rwaurigae' ? `rgba(249, 115, 22, ${targetAlpha})` : `rgba(236, 72, 153, ${targetAlpha})`;
+          ctx.shadowColor = currentTarget === 'rwaurigae' ? "#f97316" : "#ec4899";
           ctx.shadowBlur = targetGlow;
           ctx.fill();
           ctx.shadowBlur = 0;
@@ -1475,7 +1530,7 @@
         ctx.shadowBlur = 0;
       } else if (currentMode === 'e2') {
         ctx.beginPath();
-        ctx.arc(e2X, e2Y, targetRadius * (currentTarget === 'rdraconis' ? 1.4 : 1.0), 0, Math.PI * 2);
+        ctx.arc(e2X, e2Y, targetRadius * ((currentTarget === 'rdraconis' || currentTarget === 'rwaurigae') ? 1.4 : 1.0), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(251, 113, 133, ${targetAlpha})`;
         ctx.shadowColor = "#fb7185";
         ctx.shadowBlur = targetGlow * 0.8;
@@ -1582,6 +1637,22 @@
         ctx.arc(centerX, centerY, 6 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
         ctx.fillStyle = "#f59e0b";
         ctx.fill();
+      } else if (currentTarget === 'epsindi') {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 4 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(6, 182, 212, 0.7)";
+        ctx.fill();
+        ctx.fillStyle = "rgba(6, 182, 212, 0.9)";
+        ctx.font = "10px monospace";
+        ctx.fillText("Eps Ind Ba/Bb", centerX - 30, centerY + 22 * zoomLevel);
+      } else if (currentTarget === 'rwaurigae') {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 5 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
+        ctx.fillStyle = "#f97316";
+        ctx.fill();
+        ctx.fillStyle = "rgba(249, 115, 22, 0.9)";
+        ctx.font = "10px monospace";
+        ctx.fillText("RW Aur A/B (T Tauri)", centerX - 35, centerY + 22 * zoomLevel);
       } else if (currentTarget === 'custom') {
         ctx.setLineDash([3, 3]);
         ctx.strokeStyle = "rgba(168, 85, 247, 0.7)";
@@ -1625,8 +1696,14 @@
           if (Math.abs(wl - 3.3) < 0.25) flux *= 0.25;
         } else if (currentTarget === 'barnard') {
           flux = 2.4 * Math.exp(-Math.pow(wl - 1.6, 2) / 1.2) + 0.4;
+        } else if (currentTarget === 'epsindi') {
+          flux = 0.9 + 0.5 * Math.sin(wl * 2.8);
+          if (Math.abs(wl - 1.66) < 0.2) flux *= 0.35;
+          if (Math.abs(wl - 3.3) < 0.28) flux *= 0.3;
         } else if (currentTarget === 'rdraconis') {
           flux = 1.8 + Math.sin(wl * 4) * 0.6;
+        } else if (currentTarget === 'rwaurigae') {
+          flux = 1.9 + Math.sin(wl * 2) * 0.7;
         } else if (currentTarget === 'custom') {
           const tCustom = TARGETS['custom'];
           flux = tCustom && tCustom.getFlux ? tCustom.getFlux(wl) : 0.8;
