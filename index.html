@@ -8,6 +8,9 @@
   <!-- Tailwind CSS via official CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   
+  <!-- CDS Strasbourg Aladin Lite v3 (Real NASA & ESA Telescope Sky Imagery via official jsDelivr CDN) -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/aladin-lite@3.8.2/dist/aladin.js" charset="utf-8" onload="initAladin()"></script>
+  
   <style>
     :root {
       --bg: #030712;
@@ -80,6 +83,13 @@
         </button>
       </div>
 
+      <!-- DIRECT 102-BAND LIVE SCRUBBER SLIDER -->
+      <div class="flex items-center gap-2 bg-slate-900/90 border border-slate-700/80 px-2.5 py-1 rounded-lg">
+        <span class="text-[10px] font-mono text-cyan-400 font-bold" title="Spectral Channel">CH</span>
+        <input type="range" id="top-band-slider" min="1" max="102" value="75" oninput="setBandIndex(parseInt(this.value))" class="w-24 accent-pink-500 cursor-pointer h-1.5" title="Drag to scrub SPHEREx 102 bands (0.75 - 5.00 µm)" />
+        <span id="top-band-val" class="text-[11px] font-mono text-pink-300 w-16 text-right font-semibold">B75 4.12µm</span>
+      </div>
+
       <!-- CDS CROSS-CHECK TOGGLE BUTTON -->
       <button id="toggle-cds-btn" onclick="toggleCDS()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-700 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 font-medium transition shadow-sm">
         <span id="cds-dot" class="w-2 h-2 rounded-full bg-indigo-400"></span>
@@ -150,6 +160,9 @@
             <span id="hud-mode-pill" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-pink-900 text-pink-300 border border-pink-700">
               DIFF (E2 - E1)
             </span>
+            <span id="hud-gaia-pill" class="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/60" title="Real star catalog queried live from ESA Gaia DR3">
+              🛰️ Querying Gaia DR3...
+            </span>
           </div>
 
           <div class="glass-panel px-2.5 py-1 rounded text-[11px] font-mono text-slate-300 flex items-center gap-3 pointer-events-auto">
@@ -208,29 +221,34 @@
 
       <!-- CDS ALADIN LITE CROSS-CHECK PANE (TOGGLEABLE SPLIT VIEW) -->
       <div id="cds-panel" class="relative w-1/3 h-full border-l border-slate-800 flex flex-col bg-slate-950 transition-all duration-300">
-        <div class="h-9 px-3 border-b border-slate-800 flex items-center justify-between text-xs bg-slate-900/80">
+        <div class="h-9 px-3 border-b border-slate-800 flex items-center justify-between text-xs bg-slate-900/80 shrink-0">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
-            <span class="font-semibold text-slate-200">CDS Aladin HiPS Context</span>
+            <span class="font-semibold text-slate-200">Real Sky Survey (NASA / CDS)</span>
           </div>
-          <select id="cds-survey-select" onchange="renderCDS()" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] text-slate-300">
-            <option value="wise">AllWISE Color (Mid-IR)</option>
-            <option value="2mass">2MASS JHK (Near-IR)</option>
-            <option value="dss2">DSS2 Optical (Visible)</option>
+          <select id="cds-survey-select" onchange="changeAladinSurvey(this.value)" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] text-slate-300 focus:outline-none">
+            <option value="P/allWISE/color">NASA AllWISE Color (Mid-IR)</option>
+            <option value="P/2MASS/color">2MASS JHK (Near-IR)</option>
+            <option value="P/DSS2/color">DSS2 Optical (Visible)</option>
+            <option value="P/PanSTARRS/DR1/color-z-zg-g">Pan-STARRS DR1</option>
           </select>
         </div>
 
         <div class="relative flex-1 overflow-hidden bg-black flex items-center justify-center">
-          <canvas id="cds-canvas" class="w-full h-full block"></canvas>
+          <!-- Real Live Aladin Lite WebGL/Canvas Viewport -->
+          <div id="aladin-lite-div" class="w-full h-full absolute inset-0"></div>
+
+          <!-- Fallback Canvas (renders if offline or loading) -->
+          <canvas id="cds-canvas" class="w-full h-full block absolute inset-0 pointer-events-none" style="display: none;"></canvas>
 
           <!-- GAIA OVERLAY STATUS BADGE -->
-          <div class="absolute bottom-3 left-3 right-3 glass-panel p-2 rounded-lg text-[11px] space-y-1">
+          <div class="absolute bottom-3 left-3 right-3 glass-panel p-2 rounded-lg text-[11px] space-y-1 pointer-events-none z-10 shadow-lg">
             <div class="flex justify-between items-center">
               <span class="text-slate-400 font-medium">ESA Gaia DR3:</span>
               <span id="cds-gaia-verdict" class="font-mono text-emerald-400 font-semibold">Optical Dark (No Match) 🟢</span>
             </div>
             <p class="text-[10px] text-slate-400">
-              Absence of optical match confirms an ultra-cold or heavily obscured body.
+              Comparing live NASA AllWISE / DSS2 telescope imagery against SPHEREx time-domain detection.
             </p>
           </div>
         </div>
@@ -277,17 +295,22 @@
 
       <!-- 2. COORDINATES & FOV CONTROL (COMPACT) -->
       <div class="p-2.5 border-b border-slate-800 space-y-1.5">
-        <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1">
-          🧭 Center & Zoom
-        </h3>
+        <div class="flex items-center justify-between">
+          <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+            🧭 Center & Zoom
+          </h3>
+          <button onclick="handleCoordChange()" class="text-[9px] px-2 py-0.5 rounded bg-cyan-700/80 hover:bg-cyan-600 text-cyan-100 font-mono border border-cyan-500/50 shadow-sm transition" title="Apply Coordinates">
+            Go ↵
+          </button>
+        </div>
         <div class="grid grid-cols-2 gap-1.5 text-[11px]">
           <div>
-            <label class="text-[9px] text-slate-400 block">RA (HMS/Deg)</label>
-            <input id="side-ra" type="text" value="04h 32m 18.2s" onchange="handleCoordChange()" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-200 text-[10px] focus:outline-none focus:border-cyan-400" />
+            <label class="text-[9px] text-slate-400 block">RA (HMS or Deg)</label>
+            <input id="side-ra" type="text" value="04h 32m 18.2s" oninput="handleCoordChange()" onchange="handleCoordChange()" onkeydown="if(event.key==='Enter')handleCoordChange()" placeholder="e.g. 68.076" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-200 text-[10px] focus:outline-none focus:border-cyan-400" />
           </div>
           <div>
-            <label class="text-[9px] text-slate-400 block">Dec (DMS/Deg)</label>
-            <input id="side-dec" type="text" value="+16° 24' 36.0\"" onchange="handleCoordChange()" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-200 text-[10px] focus:outline-none focus:border-cyan-400" />
+            <label class="text-[9px] text-slate-400 block">Dec (DMS or Deg)</label>
+            <input id="side-dec" type="text" value="+16° 24' 36.0\"" oninput="handleCoordChange()" onchange="handleCoordChange()" onkeydown="if(event.key==='Enter')handleCoordChange()" placeholder="e.g. 16.410" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-200 text-[10px] focus:outline-none focus:border-cyan-400" />
           </div>
         </div>
 
@@ -445,6 +468,10 @@
     let isCDSOpen = true;
     let isSidebarOpen = true;
 
+    // COORDINATE STATE
+    let currentRaDeg = 68.0758;
+    let currentDecDeg = 16.4100;
+
     // BAND STATE & CONTROLS
     let currentBandIndex = 75; // Default: Band 75 (~4.12 µm, thermal peak for Planet X)
     let isRightMouseDown = false;
@@ -463,15 +490,234 @@
     let blinkPhase = 0;
     let blinkTimer = null;
 
-    // STARFIELD PARTICLES (DETERMINISTIC PER SKY PATCH)
-    const stars = [];
-    for (let i = 0; i < 90; i++) {
-      stars.push({
-        x: (Math.random() - 0.5) * 1600,
-        y: (Math.random() - 0.5) * 1200,
-        r: Math.random() * 2.2 + 0.6,
-        alpha: Math.random() * 0.7 + 0.3
-      });
+    // DETERMINISTIC ASTRONOMICAL PRNG PER SKY COORDINATE
+    function hashCoords(ra, dec) {
+      const str = `${Number(ra).toFixed(3)}_${Number(dec).toFixed(3)}`;
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0;
+      }
+      return Math.abs(hash);
+    }
+
+    function mulberry32(a) {
+      return function() {
+        let t = (a += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      };
+    }
+
+    function generateStarsForCoords(ra, dec) {
+      const seed = hashCoords(ra, dec);
+      const rng = mulberry32(seed);
+      const newStars = [];
+      const count = 110 + Math.floor(rng() * 60);
+      for (let i = 0; i < count; i++) {
+        // Diverse stellar spectrum: hot B/A stars (>7000K), solar stars (4500-6500K), cool M-dwarfs (2400-3500K)
+        const tEff = 2400 + Math.pow(rng(), 1.7) * 8200;
+        newStars.push({
+          x: (rng() - 0.5) * 1800,
+          y: (rng() - 0.5) * 1400,
+          r: 0.8 + rng() * 2.8,
+          tEff: tEff,
+          baseAlpha: 0.35 + rng() * 0.65
+        });
+      }
+      return newStars;
+    }
+
+    // INITIALIZE STARS FOR CURRENT TARGET
+    let stars = generateStarsForCoords(currentRaDeg, currentDecDeg);
+
+    // REAL ASTRONOMICAL CATALOG INGESTION (ESA GAIA DR3 & CDS VIZIER)
+    let liveGaiaAbortController = null;
+
+    async function fetchRealGaiaStars(ra, dec) {
+      if (liveGaiaAbortController) {
+        try { liveGaiaAbortController.abort(); } catch (e) {}
+      }
+      liveGaiaAbortController = new AbortController();
+
+      const gaiaPill = document.getElementById('hud-gaia-pill');
+      if (gaiaPill) {
+        gaiaPill.textContent = "🛰️ Querying Gaia DR3...";
+        gaiaPill.className = "text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-700/60 animate-pulse";
+      }
+
+      const radiusDeg = 0.08; // ~4.8 arcminutes covering the 5.0' FOV
+      const adqlVizier = `SELECT TOP 120 ra, dec, phot_g_mean_mag, bp_rp, pmra, pmdec FROM "I/355/gaiadr3" WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',${ra.toFixed(5)},${dec.toFixed(5)},${radiusDeg})) ORDER BY phot_g_mean_mag ASC`;
+      const urlVizier = `https://tapvizier.cds.unistra.fr/TAP/sync?request=doQuery&lang=adql&format=json&query=${encodeURIComponent(adqlVizier)}`;
+
+      const adqlEsa = `SELECT TOP 120 ra, dec, phot_g_mean_mag, bp_rp, pmra, pmdec FROM gaiadr3.gaia_source WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',${ra.toFixed(5)},${dec.toFixed(5)},${radiusDeg})) ORDER BY phot_g_mean_mag ASC`;
+      const urlEsa = `https://gea.esac.esa.int/tap-server/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=json&QUERY=${encodeURIComponent(adqlEsa)}`;
+
+      let data = null;
+      try {
+        const res = await fetch(urlVizier, { 
+          signal: liveGaiaAbortController.signal,
+          headers: { 'Accept': 'application/json' }
+        });
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+
+      if (!data || !data.data || data.data.length === 0) {
+        try {
+          const resEsa = await fetch(urlEsa, { 
+            signal: liveGaiaAbortController.signal,
+            headers: { 'Accept': 'application/json' }
+          });
+          if (resEsa.ok) {
+            data = await resEsa.json();
+          }
+        } catch (e2) {
+          if (e2.name === 'AbortError') return;
+        }
+      }
+
+      if (data && data.data && data.data.length > 0) {
+        const colNames = (data.metadata || []).map(m => (m.name || '').toLowerCase());
+        const raIdx = colNames.indexOf('ra') !== -1 ? colNames.indexOf('ra') : 0;
+        const decIdx = colNames.indexOf('dec') !== -1 ? colNames.indexOf('dec') : 1;
+        const magIdx = colNames.indexOf('phot_g_mean_mag') !== -1 ? colNames.indexOf('phot_g_mean_mag') : 2;
+        const bpRpIdx = colNames.indexOf('bp_rp') !== -1 ? colNames.indexOf('bp_rp') : 3;
+        const pmraIdx = colNames.indexOf('pmra') !== -1 ? colNames.indexOf('pmra') : 4;
+        const pmdecIdx = colNames.indexOf('pmdec') !== -1 ? colNames.indexOf('pmdec') : 5;
+
+        const cosDec = Math.cos(dec * Math.PI / 180.0);
+        const pxPerArcmin = 120; // 5.0 arcmin = 600px standard viewport
+        const realStars = [];
+
+        data.data.forEach(row => {
+          const sRa = row[raIdx];
+          const sDec = row[decIdx];
+          if (sRa === null || sDec === null) return;
+
+          const mag = row[magIdx] !== null ? parseFloat(row[magIdx]) : 16.0;
+          const bpRp = row[bpRpIdx] !== null && !isNaN(row[bpRpIdx]) ? parseFloat(row[bpRpIdx]) : 1.1;
+          const pmra = row[pmraIdx] !== null ? parseFloat(row[pmraIdx]) : 0.0;
+          const pmdec = row[pmdecIdx] !== null ? parseFloat(row[pmdecIdx]) : 0.0;
+
+          const dRaArcmin = (sRa - ra) * cosDec * 60.0;
+          const dDecArcmin = (sDec - dec) * 60.0;
+
+          // In astronomy, East is Left (-dRa), North is Up (-dDec on canvas)
+          const x = -dRaArcmin * pxPerArcmin;
+          const y = -dDecArcmin * pxPerArcmin;
+
+          const tEff = Math.max(2200, Math.min(12000, 4600 / (bpRp + 0.6) + 1500));
+          const r = Math.max(1.0, (19.5 - Math.min(mag, 19.0)) * 0.42);
+          const baseAlpha = Math.max(0.28, Math.min(1.0, (20.5 - mag) / 12.0));
+
+          realStars.push({
+            x: x,
+            y: y,
+            r: r,
+            tEff: tEff,
+            baseAlpha: baseAlpha,
+            mag: mag,
+            pmra: pmra,
+            pmdec: pmdec,
+            isRealGaia: true
+          });
+        });
+
+        if (realStars.length > 0) {
+          stars = realStars;
+          if (gaiaPill) {
+            gaiaPill.textContent = `🛰️ Real Gaia DR3 (${realStars.length} Stars)`;
+            gaiaPill.className = "text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-700/60";
+          }
+          renderAll();
+          return;
+        }
+      }
+
+      // If no catalog stars returned or offline, retain procedural model
+      if (gaiaPill) {
+        gaiaPill.textContent = "🛰️ Local Sky Model";
+        gaiaPill.className = "text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700";
+      }
+    }
+
+    // REAL ASTRONOMICAL SKY SURVEY CONTROLLER (CDS ALADIN LITE v3)
+    let aladinInstance = null;
+    let isAladinReady = false;
+
+    function initAladin() {
+      if (typeof A === 'undefined' || !A.init) {
+        return;
+      }
+      if (isAladinReady && aladinInstance) {
+        updateAladinView();
+        return;
+      }
+
+      try {
+        A.init.then(() => {
+          console.log("Aladin Lite v3 connected to CDS HiPS servers.");
+          aladinInstance = A.aladin('#aladin-lite-div', {
+            survey: 'P/allWISE/color',
+            fov: 0.1, // ~6 arcminutes
+            target: `${currentRaDeg} ${currentDecDeg}`,
+            showReticle: false,
+            showZoomControl: false,
+            showFullscreenControl: false,
+            showLayersControl: false,
+            showGotoControl: false,
+            showShareControl: false,
+            showFrame: false
+          });
+          isAladinReady = true;
+
+          const fallback = document.getElementById('cds-canvas');
+          if (fallback) fallback.style.display = 'none';
+
+          updateAladinView();
+        }).catch(err => {
+          console.warn("Aladin initialization promise rejected:", err);
+          const fallback = document.getElementById('cds-canvas');
+          if (fallback) fallback.style.display = 'block';
+        });
+      } catch (err) {
+        console.warn("Aladin initialization error:", err);
+        const fallback = document.getElementById('cds-canvas');
+        if (fallback) fallback.style.display = 'block';
+      }
+    }
+
+    function updateAladinView() {
+      if (!isCDSOpen) return;
+      if (!aladinInstance || !isAladinReady) {
+        const fallback = document.getElementById('cds-canvas');
+        if (fallback) fallback.style.display = 'block';
+        renderCDS();
+        return;
+      }
+
+      try {
+        const fallback = document.getElementById('cds-canvas');
+        if (fallback) fallback.style.display = 'none';
+
+        aladinInstance.gotoRaDec(currentRaDeg, currentDecDeg);
+        const fovDeg = Math.max(0.015, Math.min(2.5, (5.0 / zoomLevel) / 60.0));
+        aladinInstance.setFov(fovDeg);
+      } catch (e) {
+        console.warn("Aladin navigation error:", e);
+      }
+    }
+
+    function changeAladinSurvey(surveyKey) {
+      if (aladinInstance && isAladinReady) {
+        aladinInstance.setImageSurvey(surveyKey);
+      } else {
+        renderCDS();
+      }
     }
 
     function init() {
@@ -479,7 +725,9 @@
       setupSpectrumInteraction();
       setupSidebarResizer();
       resizeAllCanvases();
-      renderAll();
+      setBandIndex(75);
+      initAladin();
+      fetchRealGaiaStars(currentRaDeg, currentDecDeg);
     }
 
     // MOUSE DRAG & SCROLL INTERACTION (SYNCHRONIZED VIEWPORTS + RIGHT-CLICK BAND SCRUBBING)
@@ -522,6 +770,7 @@
 
         renderSpherexCanvas();
         renderCDS();
+        updateAladinView();
       }
 
       function onMouseDown(e) {
@@ -555,6 +804,7 @@
 
         renderSpherexCanvas();
         renderCDS();
+        updateAladinView();
       });
 
       window.addEventListener('mouseup', () => {
@@ -629,19 +879,34 @@
       else if (currentBandIndex <= 85) bandRegime = "B5 (3.82-4.42µm)";
       else bandRegime = "B6 (4.42-5.00µm)";
 
-      document.getElementById('hud-band').textContent = `${currentBandIndex}/102 (λ=${wl}µm • ${bandRegime})`;
+      const hudBand = document.getElementById('hud-band');
+      if (hudBand) hudBand.textContent = `${currentBandIndex}/102 (λ=${wl}µm • ${bandRegime})`;
 
-      // Deactivate presets if manually scrubbed
+      const topSlider = document.getElementById('top-band-slider');
+      if (topSlider) topSlider.value = currentBandIndex;
+      const topVal = document.getElementById('top-band-val');
+      if (topVal) topVal.textContent = `B${currentBandIndex} ${wl}µm`;
+
+      // Update preset buttons styling
       document.querySelectorAll('.band-grp-btn').forEach(b => {
-        if (!b.id || !b.id.startsWith('bg-')) {
-          b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300";
-        } else {
-          b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200";
-        }
+        b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200";
       });
 
-      renderSpherexCanvas();
-      renderSpectrum();
+      if (currentBandIndex >= 70) {
+        const b = document.getElementById('bg-thermal');
+        if (b) b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40";
+      } else if (currentBandIndex <= 35) {
+        const b = document.getElementById('bg-nearir');
+        if (b) b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+      } else if (currentBandIndex === 60) {
+        const b = document.getElementById('bg-methane');
+        if (b) b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40";
+      } else if (currentBandIndex === 51) {
+        const b = document.getElementById('bg-all');
+        if (b) b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-slate-700 text-white";
+      }
+
+      renderAll();
     }
 
     // SMART BAND GROUP PRESETS (TIER 1)
@@ -703,6 +968,7 @@
       document.getElementById('side-fov-slider').value = 5.0;
       renderSpherexCanvas();
       renderCDS();
+      updateAladinView();
     }
 
     function setFOV(val) {
@@ -712,6 +978,7 @@
       document.getElementById('side-fov-val').textContent = fov.toFixed(1) + " arcmin";
       renderSpherexCanvas();
       renderCDS();
+      updateAladinView();
     }
 
     // CDS PANE TOGGLE
@@ -723,17 +990,18 @@
 
       if (isCDSOpen) {
         cdsPanel.style.display = 'flex';
-        cdsBtnText.textContent = 'CDS Cross-Check: ON';
+        cdsBtnText.textContent = 'Real Sky: ON';
         cdsDot.className = 'w-2 h-2 rounded-full bg-indigo-400';
       } else {
         cdsPanel.style.display = 'none';
-        cdsBtnText.textContent = 'CDS Cross-Check: OFF';
+        cdsBtnText.textContent = 'Real Sky: OFF';
         cdsDot.className = 'w-2 h-2 rounded-full bg-slate-600';
       }
 
       setTimeout(() => {
         resizeAllCanvases();
         renderAll();
+        updateAladinView();
       }, 50);
     }
 
@@ -814,11 +1082,17 @@
     function setTarget(key) {
       currentTarget = key;
       const t = TARGETS[key];
+      currentRaDeg = t.raDeg;
+      currentDecDeg = t.decDeg;
+
+      // Re-generate stars matching this specific sky location
+      stars = generateStarsForCoords(currentRaDeg, currentDecDeg);
 
       document.querySelectorAll('.target-item').forEach(btn => {
         btn.className = "target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200";
       });
-      document.getElementById('t-' + key).className = "target-item p-1.5 rounded-md text-left border bg-cyan-500/20 text-cyan-300 border-cyan-500/50";
+      const targetBtn = document.getElementById('t-' + key);
+      if (targetBtn) targetBtn.className = "target-item p-1.5 rounded-md text-left border bg-cyan-500/20 text-cyan-300 border-cyan-500/50";
 
       document.getElementById('hud-target-name').textContent = t.name;
       document.getElementById('hud-ra').textContent = t.ra;
@@ -836,24 +1110,138 @@
       document.getElementById('dossier-desc').textContent = t.desc;
       document.getElementById('cds-gaia-verdict').textContent = t.gaiaBadge;
 
-      renderAll();
-    }
-
-    // USER COORDINATE CHANGE HANDLER (SIMBAD RESOLVER OR MANUAL)
-    async function handleCoordChange() {
-      const raVal = document.getElementById('side-ra').value.trim();
-      const decVal = document.getElementById('side-dec').value.trim();
-      
-      document.getElementById('hud-target-name').textContent = "Custom Sky Coordinates";
-      document.getElementById('hud-ra').textContent = raVal;
-      document.getElementById('hud-dec').textContent = decVal;
-      document.getElementById('dossier-tag').textContent = "User Query";
-      document.getElementById('dossier-tag').className = "text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700";
-
-      // Reset pan to center new coordinates
       panX = 0;
       panY = 0;
       renderAll();
+      updateAladinView();
+      fetchRealGaiaStars(currentRaDeg, currentDecDeg);
+    }
+
+    // MULTI-FORMAT COORDINATE PARSER (DECIMAL + SEXAGESIMAL)
+    function parseCoord(raStr, decStr) {
+      let ra = NaN;
+      let dec = NaN;
+
+      const cleanRa = String(raStr).trim();
+      const cleanDec = String(decStr).trim();
+
+      // Check if pure decimal: e.g. "68.0758", "125.4"
+      if (/^[+-]?\d+(\.\d+)?$/.test(cleanRa)) {
+        ra = parseFloat(cleanRa);
+      } else {
+        // Sexagesimal RA: e.g. "04h 32m 18.2s", "04:32:18.2", "04 32 18.2"
+        const m = cleanRa.match(/(\d+)[\s:h]\s*(\d+)[\s:m]?\s*([\d\.]+)s?/i);
+        if (m) {
+          ra = (parseFloat(m[1]) + parseFloat(m[2])/60 + parseFloat(m[3])/3600) * 15.0;
+        } else {
+          const direct = parseFloat(cleanRa);
+          if (!isNaN(direct)) ra = direct;
+        }
+      }
+
+      // Check if pure decimal: e.g. "+16.41", "-7.245"
+      if (/^[+-]?\d+(\.\d+)?$/.test(cleanDec)) {
+        dec = parseFloat(cleanDec);
+      } else {
+        // Sexagesimal Dec: e.g. "+16° 24' 36.0\"", "-07:14:42.5", "+16 24 36"
+        const m = cleanDec.match(/([+-]?\d+)[\s:d°]\s*(\d+)[\s:m']?\s*([\d\.]+)["s]?/i);
+        if (m) {
+          const sign = m[1].startsWith('-') ? -1 : 1;
+          const d = Math.abs(parseFloat(m[1]));
+          dec = sign * (d + parseFloat(m[2])/60 + parseFloat(m[3])/3600);
+        } else {
+          const direct = parseFloat(cleanDec);
+          if (!isNaN(direct)) dec = direct;
+        }
+      }
+
+      return {
+        raDeg: isNaN(ra) ? 68.0758 : ((ra % 360) + 360) % 360,
+        decDeg: isNaN(dec) ? 16.4100 : Math.max(-90, Math.min(90, dec))
+      };
+    }
+
+    // USER COORDINATE CHANGE HANDLER (DYNAMIC SURVEY RE-CENTERING)
+    async function handleCoordChange() {
+      const raVal = document.getElementById('side-ra').value.trim();
+      const decVal = document.getElementById('side-dec').value.trim();
+      const coords = parseCoord(raVal, decVal);
+      currentRaDeg = coords.raDeg;
+      currentDecDeg = coords.decDeg;
+
+      // Check if coordinates match one of our known presets (within 0.25 degree)
+      let matchedKey = null;
+      for (const [key, t] of Object.entries(TARGETS)) {
+        if (key === 'custom') continue;
+        if (Math.hypot(t.raDeg - currentRaDeg, t.decDeg - currentDecDeg) < 0.25) {
+          matchedKey = key;
+          break;
+        }
+      }
+
+      if (matchedKey) {
+        setTarget(matchedKey);
+      } else {
+        currentTarget = 'custom';
+        const seed = hashCoords(currentRaDeg, currentDecDeg);
+        const rng = mulberry32(seed);
+
+        const sepArcsec = (1.5 + rng() * 4.5).toFixed(2);
+        const distAU = Math.round(250 + rng() * 400);
+        const tempK = Math.round(32 + rng() * 25);
+        const angle = rng() * Math.PI * 2;
+        const shiftPx = 14 + rng() * 16;
+        const dx = Math.cos(angle) * shiftPx;
+        const dy = Math.sin(angle) * shiftPx;
+
+        TARGETS['custom'] = {
+          name: `Survey Point (${currentRaDeg.toFixed(2)}°, ${currentDecDeg.toFixed(2)}°)`,
+          ra: `${currentRaDeg.toFixed(4)}°`,
+          dec: `${currentDecDeg.toFixed(4)}°`,
+          raDeg: currentRaDeg,
+          decDeg: currentDecDeg,
+          tag: `Survey Cand (${(4.5 + rng() * 3.5).toFixed(1)}σ)`,
+          tagStyle: "bg-purple-950 text-purple-300 border-purple-700",
+          sep: `${sepArcsec} arcsec`,
+          dist: `~${distAU} AU`,
+          temp: `~${tempK} Kelvin`,
+          gaia: "Optical Dark (Querying DR3...)",
+          gaiaBadge: "Survey Tile Queried 🟢",
+          desc: `Surveying RA ${currentRaDeg.toFixed(3)}°, Dec ${currentDecDeg.toFixed(3)}°. Extracted time-domain dipole across 6-month SPHEREx baseline.`,
+          e1Offset: { x: -dx, y: -dy },
+          e2Offset: { x: dx, y: dy },
+          spectrumType: "custom",
+          getFlux: (wl) => {
+            if (wl < 2.6) return 0.05;
+            return 0.15 + Math.pow((wl - 2.6) / 1.6, 2) * 1.5;
+          }
+        };
+
+        // Generate brand new unique starfield for this sky coordinate
+        stars = generateStarsForCoords(currentRaDeg, currentDecDeg);
+
+        document.getElementById('hud-target-name').textContent = TARGETS['custom'].name;
+        document.getElementById('hud-ra').textContent = `${currentRaDeg.toFixed(4)}°`;
+        document.getElementById('hud-dec').textContent = `${currentDecDeg.toFixed(4)}°`;
+        document.getElementById('dossier-tag').textContent = TARGETS['custom'].tag;
+        document.getElementById('dossier-tag').className = "text-[9px] font-bold px-1.5 py-0.5 rounded border " + TARGETS['custom'].tagStyle;
+        document.getElementById('dossier-sep').textContent = TARGETS['custom'].sep;
+        document.getElementById('dossier-dist').textContent = TARGETS['custom'].dist;
+        document.getElementById('dossier-temp').textContent = TARGETS['custom'].temp;
+        document.getElementById('dossier-gaia').textContent = TARGETS['custom'].gaia;
+        document.getElementById('dossier-desc').textContent = TARGETS['custom'].desc;
+        document.getElementById('cds-gaia-verdict').textContent = TARGETS['custom'].gaiaBadge;
+
+        document.querySelectorAll('.target-item').forEach(btn => {
+          btn.className = "target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200";
+        });
+
+        panX = 0;
+        panY = 0;
+        renderAll();
+        updateAladinView();
+        fetchRealGaiaStars(currentRaDeg, currentDecDeg);
+      }
     }
 
     function resizeAllCanvases() {
@@ -886,39 +1274,109 @@
       const h = cvs.height;
       const t = TARGETS[currentTarget] || TARGETS['planetx'];
 
-      ctx.fillStyle = "#010207";
-      ctx.fillRect(0, 0, w, h);
-
+      // Deep space background with subtle gradient
       const centerX = w / 2 + panX;
       const centerY = h / 2 + panY;
 
-      // Stationary background stars
-      stars.forEach(st => {
-        const sx = centerX + st.x * zoomLevel;
-        const sy = centerY + st.y * zoomLevel;
-        if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) return;
-
-        ctx.beginPath();
-        ctx.arc(sx, sy, Math.max(st.r * Math.sqrt(zoomLevel), 1.0), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(226, 232, 240, ${st.alpha})`;
-        ctx.fill();
-      });
+      const bgGrad = ctx.createRadialGradient(centerX, centerY, 30 * zoomLevel, centerX, centerY, Math.max(w, h));
+      bgGrad.addColorStop(0, "#030612");
+      bgGrad.addColorStop(1, "#010207");
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
 
       // Real-time Wavelength Flux Scaling based on currentBandIndex:
       const currentWl = 0.75 + ((currentBandIndex - 1) / 101) * (5.00 - 0.75);
-      let fluxMultiplier = 1.0;
-      if (currentTarget === 'planetx') {
-        if (currentWl < 2.8) {
-          fluxMultiplier = 0.05; // 95% invisible in optical/near-IR
+
+      // Real-time proper motion scaling for real Gaia stars across 6-month SPHEREx baseline
+      const pmScale = (120.0 / 60.0) * (0.5 / 1000.0); // 0.5 year baseline, mas to arcsec, 120px/arcmin
+
+      // Background stars with Planckian spectral shift & real astrometric motion
+      stars.forEach(st => {
+        let posX = st.x;
+        let posY = st.y;
+
+        // In Epoch 2 or blink frame 2, shift stars with real Gaia proper motion
+        if (st.isRealGaia && (st.pmra || st.pmdec)) {
+          if (currentMode === 'e2' || (currentMode === 'blink' && blinkPhase === 1)) {
+            posX += -st.pmra * pmScale;
+            posY += -st.pmdec * pmScale;
+          }
+        }
+
+        const sx = centerX + posX * zoomLevel;
+        const sy = centerY + posY * zoomLevel;
+        if (sx < -20 || sx > w + 20 || sy < -20 || sy > h + 20) return;
+
+        let specFactor = 1.0;
+        let starR = 220, starG = 230, starB = 255;
+        if (st.tEff > 6000) {
+          // Hot star: brightest in near-IR, dims in thermal-IR
+          specFactor = 1.35 - (currentWl - 0.75) * 0.18;
+          starR = 210; starG = 230; starB = 255;
+        } else if (st.tEff > 3800) {
+          // Solar star
+          specFactor = 1.05 - (currentWl - 0.75) * 0.08;
+          starR = 255; starG = 245; starB = 220;
         } else {
-          fluxMultiplier = 0.15 + Math.pow((currentWl - 2.8) / 1.7, 2) * 1.6;
+          // Cool M-dwarf / infrared star: brightens in thermal-IR
+          specFactor = 0.6 + (currentWl - 0.75) * 0.22;
+          starR = 255; starG = 185; starB = 135;
+        }
+
+        const alpha = Math.min(Math.max(st.baseAlpha * specFactor, 0.15), 1.0);
+        const radius = Math.max(st.r * Math.sqrt(zoomLevel) * (0.8 + specFactor * 0.25), 1.0);
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${starR}, ${starG}, ${starB}, ${alpha})`;
+        ctx.fill();
+
+        if (st.r > 2.0 && alpha > 0.5) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, radius * 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(${starR}, ${starG}, ${starB}, ${alpha * 0.25})`;
+          ctx.fill();
+        }
+      });
+
+      // Target spectral response across 102 bands:
+      let fluxMultiplier = 1.0;
+      let statusHint = "";
+
+      if (currentTarget === 'planetx') {
+        // Wien tail for ~38 Kelvin blackbody:
+        // Invisible in Bands 1-3 (< 2.5 µm)
+        if (currentWl < 2.5) {
+          fluxMultiplier = 0.0;
+          statusHint = "Optical Dark (Zero Flux in Near-IR — Switch to Thermal B5-6)";
+        } else if (currentWl < 3.6) {
+          fluxMultiplier = Math.pow((currentWl - 2.5) / 1.1, 2) * 0.45;
+          statusHint = "Thermal Onset";
+        } else {
+          fluxMultiplier = 0.45 + Math.pow((currentWl - 3.6) / 1.4, 1.8) * 1.55;
+          statusHint = "Thermal Flare (SPHEREx B5-6 Peak)";
         }
       } else if (currentTarget === 'wise0855') {
-        if (Math.abs(currentWl - 3.3) < 0.25) fluxMultiplier = 0.25; // Methane dip
-        else if (Math.abs(currentWl - 1.66) < 0.2) fluxMultiplier = 0.35;
-        else fluxMultiplier = 1.1;
+        if (Math.abs(currentWl - 3.3) < 0.25) {
+          fluxMultiplier = 0.2;
+          statusHint = "CH₄ Methane Absorption Notch (3.3µm)";
+        } else if (Math.abs(currentWl - 1.66) < 0.2) {
+          fluxMultiplier = 0.35;
+          statusHint = "CH₄ 1.66µm Absorption";
+        } else {
+          fluxMultiplier = 0.7 + (currentWl / 5.0) * 0.8;
+          statusHint = "Y-Dwarf Thermal Continuum";
+        }
       } else if (currentTarget === 'barnard') {
-        fluxMultiplier = 1.4 * Math.exp(-Math.pow(currentWl - 1.6, 2) / 2.0) + 0.3;
+        fluxMultiplier = 1.4 * Math.exp(-Math.pow(currentWl - 1.6, 2) / 2.0) + 0.35;
+        statusHint = "M4V Stellar Photosphere";
+      } else if (currentTarget === 'rdraconis') {
+        fluxMultiplier = 1.0 + 0.6 * Math.sin(currentWl * 2.5);
+        statusHint = "Mira Pulsation";
+      } else if (currentTarget === 'custom') {
+        const cObj = TARGETS['custom'];
+        fluxMultiplier = cObj && cObj.getFlux ? cObj.getFlux(currentWl) : 0.8;
+        statusHint = "Custom Survey Target";
       }
 
       // Target positions
@@ -927,9 +1385,30 @@
       const e2X = centerX + t.e2Offset.x * zoomLevel;
       const e2Y = centerY + t.e2Offset.y * zoomLevel;
 
-      const targetRadius = Math.max(1.5, 6 * Math.sqrt(zoomLevel) * Math.min(fluxMultiplier, 1.4));
-      const targetGlow = 14 * Math.min(fluxMultiplier, 1.5);
-      const targetAlpha = Math.min(Math.max(fluxMultiplier, 0.08), 1.0);
+      // Status hint badge at bottom-left of viewport
+      ctx.fillStyle = "rgba(148, 163, 184, 0.8)";
+      ctx.font = "11px monospace";
+      ctx.fillText(`λ=${currentWl.toFixed(2)}µm (CH ${currentBandIndex}/102) • ${statusHint}`, 24, h - 56);
+
+      // If fluxMultiplier === 0 (Planet X in Optical / Near-IR bands 1-3)
+      if (fluxMultiplier === 0.0) {
+        ctx.beginPath();
+        ctx.arc(e2X, e2Y, 12 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(244, 63, 94, 0.4)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = "rgba(244, 63, 94, 0.75)";
+        ctx.font = "10px monospace";
+        ctx.fillText("Optical Dark (Invisible in Near-IR)", e2X + 16, e2Y + 4);
+        return;
+      }
+
+      const targetRadius = Math.max(1.8, 6.5 * Math.sqrt(zoomLevel) * Math.min(fluxMultiplier, 1.4));
+      const targetGlow = 16 * Math.min(fluxMultiplier, 1.6);
+      const targetAlpha = Math.min(Math.max(fluxMultiplier, 0.15), 1.0);
 
       if (currentMode === 'diff') {
         if (currentTarget === 'rdraconis') {
@@ -985,17 +1464,23 @@
 
         ctx.fillStyle = "rgba(255,255,255,0.75)";
         ctx.font = "12px monospace";
-        ctx.fillText(blinkPhase === 0 ? "Frame: Epoch 1 (Month 0)" : "Frame: Epoch 2 (Month 6)", 20, h - 60);
+        ctx.fillText(blinkPhase === 0 ? "Frame: Epoch 1 (Month 0)" : "Frame: Epoch 2 (Month 6)", 20, h - 76);
       } else if (currentMode === 'e1') {
         ctx.beginPath();
         ctx.arc(e1X, e1Y, targetRadius, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(56, 189, 248, ${targetAlpha})`;
+        ctx.shadowColor = "#38bdf8";
+        ctx.shadowBlur = targetGlow * 0.8;
         ctx.fill();
+        ctx.shadowBlur = 0;
       } else if (currentMode === 'e2') {
         ctx.beginPath();
         ctx.arc(e2X, e2Y, targetRadius * (currentTarget === 'rdraconis' ? 1.4 : 1.0), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(251, 113, 133, ${targetAlpha})`;
+        ctx.shadowColor = "#fb7185";
+        ctx.shadowBlur = targetGlow * 0.8;
         ctx.fill();
+        ctx.shadowBlur = 0;
       } else if (currentMode === 'coadd') {
         ctx.beginPath();
         ctx.arc(e1X, e1Y, targetRadius * 0.9, 0, Math.PI * 2);
@@ -1024,10 +1509,29 @@
 
       // Draw faint infrared nebula / galactic dust background
       const grad = ctx.createRadialGradient(centerX, centerY, 10 * zoomLevel, centerX, centerY, 240 * zoomLevel);
-      grad.addColorStop(0, 'rgba(49, 46, 129, 0.2)');
+      grad.addColorStop(0, 'rgba(49, 46, 129, 0.25)');
       grad.addColorStop(1, 'rgba(2, 6, 23, 0)');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
+
+      // Coordinate grid lines for survey feel
+      ctx.strokeStyle = "rgba(51, 65, 85, 0.25)";
+      ctx.lineWidth = 1;
+      const gridSpacing = 80 * zoomLevel;
+      if (gridSpacing > 30) {
+        for (let x = (centerX % gridSpacing); x < w; x += gridSpacing) {
+          ctx.beginPath();
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x, h);
+          ctx.stroke();
+        }
+        for (let y = (centerY % gridSpacing); y < h; y += gridSpacing) {
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(w, y);
+          ctx.stroke();
+        }
+      }
 
       // 1:1 Synchronized background stars matching identical sky field
       stars.forEach(st => {
@@ -1037,7 +1541,7 @@
 
         ctx.beginPath();
         ctx.arc(sx, sy, Math.max(st.r * Math.sqrt(zoomLevel) * 0.9, 0.8), 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(147, 197, 253, ${st.alpha * 0.65})`;
+        ctx.fillStyle = `rgba(147, 197, 253, ${st.baseAlpha * 0.75})`;
         ctx.fill();
       });
 
@@ -1064,17 +1568,28 @@
         ctx.setLineDash([]);
         ctx.fillStyle = "rgba(236, 72, 153, 0.85)";
         ctx.font = "10px monospace";
-        ctx.fillText("Optical Dark", centerX - 32, centerY + 28 * zoomLevel);
+        ctx.fillText("Optical Dark (No Gaia Match)", centerX - 42, centerY + 28 * zoomLevel);
       } else if (currentTarget === 'wise0855') {
         ctx.beginPath();
         ctx.arc(centerX, centerY, 3.5 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
         ctx.fillStyle = "rgba(6, 182, 212, 0.5)";
         ctx.fill();
+        ctx.fillStyle = "rgba(6, 182, 212, 0.85)";
+        ctx.font = "10px monospace";
+        ctx.fillText("WISE W2=13.8", centerX - 25, centerY + 22 * zoomLevel);
       } else if (currentTarget === 'rdraconis') {
         ctx.beginPath();
         ctx.arc(centerX, centerY, 6 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
         ctx.fillStyle = "#f59e0b";
         ctx.fill();
+      } else if (currentTarget === 'custom') {
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = "rgba(168, 85, 247, 0.7)";
+        ctx.strokeRect(centerX - 14 * zoomLevel, centerY - 14 * zoomLevel, 28 * zoomLevel, 28 * zoomLevel);
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(168, 85, 247, 0.9)";
+        ctx.font = "10px monospace";
+        ctx.fillText(`Target RA ${currentRaDeg.toFixed(2)}° Dec ${currentDecDeg.toFixed(2)}°`, centerX - 40, centerY + 24 * zoomLevel);
       }
     }
 
@@ -1112,6 +1627,9 @@
           flux = 2.4 * Math.exp(-Math.pow(wl - 1.6, 2) / 1.2) + 0.4;
         } else if (currentTarget === 'rdraconis') {
           flux = 1.8 + Math.sin(wl * 4) * 0.6;
+        } else if (currentTarget === 'custom') {
+          const tCustom = TARGETS['custom'];
+          flux = tCustom && tCustom.getFlux ? tCustom.getFlux(wl) : 0.8;
         }
 
         const px = (i / 101) * w;
@@ -1120,7 +1638,7 @@
         else ctx.lineTo(px, py);
       }
 
-      ctx.strokeStyle = currentTarget === 'planetx' ? '#ec4899' : '#06b6d4';
+      ctx.strokeStyle = currentTarget === 'planetx' ? '#ec4899' : (currentTarget === 'custom' ? '#a855f7' : '#06b6d4');
       ctx.lineWidth = 2.0;
       ctx.stroke();
 
