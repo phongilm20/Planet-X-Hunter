@@ -1,119 +1,94 @@
-# 🌌 SPHEREx Time-Domain Sky Explorer
-### NASA Space Apps Challenge 2026: "Planet X and SPHEREx"
-**Citizen Science Multi-Epoch Infrared Sky Viewer, Dipole Anomaly Hunter & 102-Band Spectrophotometric Analyzer**
+# 🪐 SPHEREx Time-Domain Sky Explorer & Planet X Hunter
 
-[![GitHub Pages](https://img.shields.io/badge/GitHub_Pages-Serverless-22c55e?style=for-the-badge&logo=github)](https://phongilm20.github.io/Planet-X-Hunter/)
-[![React](https://img.shields.io/badge/React_18-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev)
-[![Vite](https://img.shields.io/badge/Vite-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
-[![Aladin Lite](https://img.shields.io/badge/Aladin_Lite_v3-CDS_Strasbourg-blue?style=for-the-badge)](https://aladin.cds.unistra.fr/AladinLite/)
+> **NASA Space Apps Challenge 2026** — *Planet X and SPHEREx*  
+> **Architecture:** 100% Serverless, Client-Side Astronomical Single-Page Application (Zero Backend Required)
 
 ---
 
-## 🔭 Executive Summary & Project Goal
-NASA's **SPHEREx** (*Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer*) mission surveys the entire celestial sphere in **102 contiguous near-infrared bands** (0.75 µm to 5.0 µm) every six months, completing four all-sky surveys over its nominal 2-year lifespan.
+## 🌌 Overview
 
-The **SPHEREx Time-Domain Sky Explorer** is a high-performance web application designed for researchers and citizen scientists to:
-1. **Identify Planet X & Sub-stellar Objects:** Leverage multi-epoch differential imaging to detect cold, faint planetary-mass objects, brown dwarfs, and high proper motion stars via their characteristic **positive-negative dipole residuals**.
-2. **Differentiate Variables vs. Moving Targets:** Distinguish moving objects from pulsating variable stars (e.g. Mira giants, T Tauri stars) that generate **monopole residuals**.
-3. **Analyze 102-Band Near-Infrared Spectra On-the-Fly:** Extract spectrophotometric curves with error bars and SPHEREx quality/contamination bitmask flags (e.g. diffraction spikes, cosmic rays, source confusion).
-4. **Cross-Match with High-Precision Catalogs:** Synchronize in real time with **Aladin Lite v3** for deep visual context, overlaying **Gaia DR3** proper motion vectors and **AllWISE** infrared catalogs.
+The **SPHEREx Time-Domain Sky Explorer** is a high-performance, citizen-science astrophysics workstation engineered to search for the hypothetical **Planet X / Planet Nine**, cold brown dwarfs, high-proper-motion stars, and transient variables across multi-epoch space telescope observations.
+
+NASA's **SPHEREx** (*Spectro-Photometer for the History of the Universe, Epoch of Reionization and Ices Explorer*) surveys the entire celestial sky once every 6 months across **102 contiguous spectral bands** ($0.75\,\mu\text{m}\text{ to }5.00\,\mu\text{m}$) using **6 Linear Variable Filter (LVF) detector arrays**. By comparing observations taken 6 months apart (Month 0 baseline vs. Month 6 cadence), this tool reveals objects that move or change brightness over time.
 
 ---
 
-## 🌐 Live Web Demo (100% Serverless / 0-Install)
-Experience the application live in your browser:
-* **GitHub Pages Live Demo:** **[https://phongilm20.github.io/Planet-X-Hunter/](https://phongilm20.github.io/Planet-X-Hunter/)**
-* **Instant Offline Launch:** Double-click [`index.html`](file:///./index.html) in the root directory to run locally in any browser with zero dependencies!
+## ⚡ Quick Start (Zero-Install, 1-Click Launch)
+
+This application is **100% serverless** with zero backend, zero Node.js dependencies, and zero build steps:
+
+1. **Clone or Download** the repository.
+2. **Double-click `index.html`** to open it immediately in any modern web browser (Chrome, Edge, Firefox, Safari).
+3. That's it! Everything—difference calculations, contrast stretches, band scrubbing, and 60 FPS blinking—runs directly in your browser's memory.
 
 ---
 
-## 🚀 How to Run
+## 🚀 Key Features
 
-### 1. Online (Zero Installation)
-Simply visit the live GitHub Pages link:
-👉 **[https://phongilm20.github.io/Planet-X-Hunter/](https://phongilm20.github.io/Planet-X-Hunter/)**
+### 1. Dominant Focus-First SPHEREx Viewport
+* Over **80% of screen real estate** is dedicated directly to astronomical data.
+* Fullscreen toggle: Hide the contextual split pane with one click to expand the SPHEREx viewport to **100% width**.
+* Clean, unobstructed sky view with zero artificial center dots or distracting reticles.
 
-### 2. Offline / Local 1-Click Launch
-Double-click [`index.html`](file:///./index.html) in the root directory. It runs locally in Chrome, Edge, or Firefox with zero dependencies or installation.
+### 2. Blind Mathematical Difference Imaging ($\Delta I = \text{Epoch 2} - \text{Epoch 1}$)
+* Performs real-time pixel-by-pixel subtraction on 65,536-element float matrices in **$< 1\text{ ms}$**.
+* Normal stationary background stars cancel out completely ($100 - 100 = 0$).
+* Moving candidates generate an unmistakable **Dipole Anomaly**:
+  * 🔵 **Cyan Dot (-):** Flux deficit showing where the object was 6 months ago (Epoch 1).
+  * 🔴 **Magenta Dot (+):** Flux excess showing where the object moved to (Epoch 2).
+* Automated Z-score peak finding pairs positive and negative anomalies and calculates trajectory vectors.
 
-### 3. Developer Mode (React / Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Vite dev server will run at: `http://localhost:5173`*
+### 3. 60 FPS Auto-Blink Comparator
+* Rapidly alternates between Epoch 1 (Month 0) and Epoch 2 (Month 6) with adjustable cadence ($0.5\text{ to }5.0\text{ Hz}$).
+* Utilizes the human eye's natural motion detection to spot moving planets jumping across a frozen starfield.
 
----
+### 4. 1:1 Synchronized Context Cross-Checking (CDS Aladin Lite)
+* Direct side-by-side comparison with the **CDS Aladin** deep-sky atlas (AllWISE Mid-IR, 2MASS Near-IR, DSS2 Optical).
+* **Exact Lockstep Navigation:** Dragging the main map 10px to the left moves the CDS map 10px to the left in real time.
+* Synchronized mouse wheel zooming and double-click recentering on either map.
+* Instant ESA Gaia DR3 optical check (if an object has no Gaia optical counterpart, it is a prime cold planet candidate).
 
-## 🎯 NASA Challenge Test Suite: 5 Official Targets
+### 5. Advanced Gesture Controls
+* **Mouse Scroll:** Smooth Zoom In / Zoom Out (Field of View $1.0'\text{ to }30.0'$).
+* **Left-Click + Hold & Drag:** Smooth celestial panning (slider thumbs are isolated and will never accidentally drag the sky).
+* **⚡ Hold Right-Click + Scroll Wheel:** Rapidly scrubs through all 102 SPHEREx light bands in real time without reaching for a slider.
 
-The application features a 1-click test bar pre-configured with the 5 official targets from the challenge prompt:
+### 6. Tier 1 Smart Band Filters & Custom Group Creator
+* **🔥 Thermal (B5-6 / 3.8–5.0 µm):** Stacks deep thermal heat—Planet X lights up brightly while normal stars fade away.
+* **🔵 Near-IR (B1-3 / 0.75–2.4 µm):** Normal stars shine, while cold $38\text{ K}$ planets are pitch black.
+* **🧪 CH₄ Methane (3.3 µm):** Isolates atmospheric methane absorption dips for brown dwarfs.
+* **`+ Custom Group` Builder:** Allows users to define and save their own named band ranges into one-click macro buttons.
 
-| Target | RA / Dec (J2000) | Astrophysical Type | Expected SPHEREx Signature |
-|---|---|---|---|
-| **WISE 0855-0714** | `133.79513°`, `-7.24515°` (`08h55m10.83s`, `-07°14'42.5"`) | Y1 Sub-Brown Dwarf (~7.3 ly) | **Extreme Dipole**: Proper motion ~8.1″/yr; invisible in optical (Band 1-2); intense absorption at 3.3 µm (CH₄) & peaks at 4.6 µm |
-| **Barnard's Star** | `269.45208°`, `+4.69339°` (`17h57m48.50s`, `+04°41'36.2"`) | M4Ve Red Dwarf (~5.96 ly) | **Northward Dipole**: Highest known proper motion (~10.3″/yr); dominant near-IR flux (1.0–1.4 µm) with TiO/VO absorption bands |
-| **Epsilon Indi B** | `331.04375°`, `-56.78278°` (`22h04m10.50s`, `-56°46'58.0"`) | T1+T6 Binary Brown Dwarf (~12 ly) | **Moving Dipole**: Proper motion ~4.7″/yr; distinct T-dwarf peaks at 1.05, 1.25, 1.6, and 2.1 µm with methane troughs |
-| **RW Aurigae** | `76.95625°`, `+30.40139°` (`05h07m49.50s`, `+30°24'05.0"`) | T Tauri Young Variable Star | **Monopole Residual**: Fixed spatial position; circumstellar dust occultation dims Epoch 2 flux by >65% |
-| **R Draconis** | `248.17042°`, `+66.75639°` (`16h32m40.90s`, `+66°45'23.0"`) | Mira Pulsating Red Giant Variable | **Monopole Residual**: Strong infrared excess; 6-month cadence captures dramatic 3.2× amplitude swing |
+### 7. Compact, Drag-Resizable Sidebar
+* Ultra-compact default width (270px) to maximize the canvas.
+* Subtle vertical splitter handle: Click and drag left/right to resize the sidebar between 210px and 550px.
+* Interactive 102-Band SED spectrum graph with live red needle tracking the active band.
 
----
-
-## 🔬 Core Architectural Features
-
-### 1. Multi-Epoch Comparator & Difference Imaging Engine
-- **Epoch 1 (DR1 - Month 0):** Baseline observation frame.
-- **Epoch 2 (QR3 - Month 6):** Second sky pass showing physical motion and temporal changes.
-- **Auto-Blink Comparator:** Smoothly toggles between Epoch 1 and Epoch 2 at user-configurable frequencies (0.5 Hz to 5.0 Hz). Moving targets jump visually against static stars.
-- **Difference Imaging (`Epoch 2 - Epoch 1`):** WCS-aligned array subtraction. Static background stars subtract to neutral dark space; moving objects appear as a **Positive-Negative Dipole Pair** (Cyan for Epoch 1, Magenta for Epoch 2); variable stars appear as bright/dark **Monopoles**.
-- **Co-Add Stack (`Epoch 1 + Epoch 2`):** Exposure stacking yielding a $\sqrt{2}$ signal-to-noise ratio (SNR) boost for faint Solar System objects.
-- **Automated Dipole / Anomaly Finder:** Statistical variance filter (`|E2 - E1| > 3.2σ`) with spatial pairing to automatically identify and classify dipoles vs monopoles.
-
-### 2. On-the-Fly 102-Band SPHEREx Spectrograph
-- Continuous near-infrared spectrophotometry from **0.75 µm to 5.00 µm** across the 6 SPHEREx Linear Variable Filter (LVF) detector segments:
-  - **Band 1:** 0.75 – 1.11 µm (Channels 1–17)
-  - **Band 2:** 1.11 – 1.64 µm (Channels 18–34)
-  - **Band 3:** 1.64 – 2.42 µm (Channels 35–51)
-  - **Band 4:** 2.42 – 3.82 µm (Channels 52–68)
-  - **Band 5:** 3.82 – 4.42 µm (Channels 69–85)
-  - **Band 6:** 4.42 – 5.00 µm (Channels 86–102)
-- Epoch 1 vs Epoch 2 curve overlay with error bars.
-- Contamination bitmask parser overlay: `CLEAN`, `SOURCE_CONFUSION`, `DIFFRACTION_SPIKE`, `COSMIC_RAY`, and `SATURATED`.
-
-### 3. Aladin Lite v3 & Catalog Cross-Match
-- Embedded Aladin Lite v3 interactive context viewport.
-- Switchable survey tiles: **AllWISE Color**, **2MASS Color**, **DSS2 Color**.
-- High-precision overlays: **Gaia DR3** astrometry + proper motion vectors, **AllWISE** infrared sources.
-
-### 4. Deep URL Parameter Sync & Embeddability
-- Real-time two-way synchronization with URL query parameters:
-  `?ra=133.795130&dec=-7.245150&fov=5.0&target=WISE+0855-0714&mode=diff&band=50&stretch=linear`
-- Instant state restoration for collaboration, scientific publication, or embedding in external web pages.
+### 8. One-Click Discovery Dossier Export
+* Generates and downloads an official NASA Space Apps observation report in formatted **CSV** format directly from browser memory.
 
 ---
 
-## 📡 REST API Specification
+## 🎯 Benchmark Calibration Targets
 
-| Method | Endpoint | Description | Query Parameters |
-|---|---|---|---|
-| `GET` | `/api/health` | Health & IRSA readiness check | None |
-| `GET` | `/api/targets` | List 5 official NASA test targets | None |
-| `GET` | `/api/cutout` | Multi-epoch image cutouts & matrices | `ra`, `dec`, `fov`, `epoch` (1, 2, diff, coadd), `band` (1-102), `stretch` (linear, log, asinh) |
-| `GET` | `/api/spectrum` | 102-band spectrophotometric extraction | `ra`, `dec`, `epoch` (1, 2, both) |
-| `GET` | `/api/irsa_query` | Live NASA/IPAC IRSA catalog proxy | `ra`, `dec`, `radius`, `catalog` |
-
----
-
-## 💡 Citizen Science: How to Hunt for Planet X
-1. **Look for a Dipole:** In Difference Mode, true moving objects (planets, brown dwarfs) display a distinctive adjacent pair of cyan and magenta circles.
-2. **Rule Out Variable Stars:** A variable star does not move; it leaves only a single spot (monopole).
-3. **Inspect the Spectrum:** Check the 102-channel curve. A cold Planet X candidate will be faint below 2 µm and peak in thermal infrared (Band 5 & 6, 4–5 µm).
-4. **Cross-Match in Aladin:** If the dipole object is NOT in Gaia DR3 or AllWISE, you may have found an uncatalogued outer Solar System object!
+| Target Preset | Nature | Distance | Temperature | Key Diagnostic Signature |
+|---|---|---|---|---|
+| **Planet X Candidate** | Outer Solar System Planet | $\sim 420\text{ AU}$ | $\sim 38\text{ K}$ | Slow 6-month dipole ($3.82''$), invisible in optical/Gaia, strong thermal emission at $4.2\,\mu\text{m}$. |
+| **WISE 0855-0714** | Sub-Stellar Y-Dwarf | $7.27\text{ ly}$ | $\sim 250\text{ K}$ | Extreme proper motion ($8.13''/\text{yr}$), deep Methane ($\text{CH}_4$) absorption dips at $1.6\,\mu\text{m}$ and $3.3\,\mu\text{m}$. |
+| **Barnard's Star** | Nearby M-Dwarf Star | $5.96\text{ ly}$ | $\sim 3,100\text{ K}$ | Fastest proper motion star known ($10.3''/\text{yr}$), matched in Gaia DR3 optical astrometry. |
+| **R Draconis** | Mira Pulsating Red Giant | $2,100\text{ ly}$ | $\sim 2,800\text{ K}$ | **Monopole Anomaly:** Position stays fixed, but flux oscillates over 245-day cycle. |
 
 ---
 
-## 📜 License
-MIT License - Built for the **NASA Space Apps Challenge 2026**.
-Developed with pride by computational astrophysicists and software engineers.
+## 🔬 Scientific Foundations & APIs
+
+* **NASA / IPAC Infrared Science Archive (IRSA):** SPHEREx Science Data System (SDS) specifications and multi-epoch survey cadences.
+* **Centre de Données astronomiques de Strasbourg (CDS):** Aladin Lite v3 HiPS rendering and Sesame/SIMBAD target resolver.
+* **ESA Gaia Mission:** Gaia DR3 astrometric catalogue for optical counter-matching.
+* **Astrophysical Model:** Planck Blackbody Radiation Law ($T \sim 30\text{--}50\text{ K}$) and Wien's Displacement Law governing near-infrared thermal emission peaks.
+
+---
+
+## 📄 License
+
+Open-source under the MIT License. Developed for the NASA Space Apps Challenge 2026.

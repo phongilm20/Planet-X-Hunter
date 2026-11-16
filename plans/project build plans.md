@@ -194,54 +194,40 @@ flowchart TD
 
 The user interface is engineered according to NASA mission operations and citizen science best practices: intuitive for beginners while offering dense, publication-grade analytical controls for professional astrophysicists.
 
-### 4.1 Responsive Screen Layout & Viewport Wireframe
+### 4.1 Responsive Screen Layout & Viewport Wireframe (Mission Commander Serverless Edition)
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ [NASA] SPHEREx Time-Domain Sky Explorer & Planet X Hunter                  [Guide] [Export] [● Health]│
-├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ [🎯 NASA Targets: [WISE 0855-0714] [Barnard's Star] [ε Indi B] [RW Aurigae] [R Draconis] [+ Custom] ] │
-├──────────────────────────┬──────────────────────────────────────────┬─────────────────────────────────┤
-│ 🕹️ OBSERVATION CONTROLS │ 🌌 PRIMARY CUTOUT VIEWPORT                │ 🔭 ALADIN LITE CONTEXT VIEW    │
-│                          │                                          │                                 │
-│ Coordinates:             │  Mode: [DIFF (E2-E1) ▼]  [Blink: 2.0 Hz] │ Survey: [AllWISE Color ▼]       │
-│ RA:  [ 133.795130      ] │  ┌────────────────────────────────────┐  │ Overlays:                       │
-│ Dec: [ -07.245150      ] │  │  (Cyan: Epoch 1)                   │  │ [x] Gaia DR3 Proper Motion      │
-│ [Sexagesimal HMS/DMS]    │  │       ○                            │  │ [x] AllWISE Source Catalog      │
-│                          │  │        \  motion vector            │  │                                 │
-│ Field of View:           │  │         \                          │  │  ┌─────────────────────────┐  │
-│ [───●──────────] 5.0'    │  │          ●                         │  │  │                         │  │
-│                          │  │       (Magenta: Epoch 2)           │  │  │      *                  │  │
-│ Observation Mode:        │  │                                    │  │  │         + Gaia vector   │  │
-│ ( ) Epoch 1 (DR1)        │  │           + Crosshair Reticle      │  │  │                         │  │
-│ ( ) Epoch 2 (QR3)        │  │                                    │  │  └─────────────────────────┘  │
-│ ( ) Auto-Blink           │  └────────────────────────────────────┘  │ Coordinates: 08h55m10s -07°14'  │
-│ (*) Difference (E2-E1)   │  [Stats: Min: -42.1  Max: +188.4 σ: 3.4] │ Pan & Zoom: Linked to SPHEREx   │
-│ ( ) Co-Add Stack (SNR+)  │  Anomaly: [DIPOLE CANDIDATE (5.8σ)]      │                                 │
-│                          │                                          │ 📋 DISCOVERY DOSSIER            │
-│ Band Index (1 - 102):    │  Stretch: [asinh ▼]   Color: [Cyan/Mag]  │ Target: WISE 0855-0714          │
-│ [────────●─────] Band 50 │  [x] Show Detected Anomaly Markers       │ Proper Motion: 8.13 "/yr        │
-│ λ = 3.32 µm (Band 4)     │  [x] High-Contrast Reticle               │ Gaia Match: NONE (Optical Faint)│
-├──────────────────────────┴──────────────────────────────────────────┴─────────────────────────────────┤
-│ 📊 102-BAND SPHEREx SPECTROPHOTOMETRIC ANALYZER (0.75 µm to 5.00 µm)                                 │
-│ ┌───────────────────────────────────────────────────────────────────────────────────────────────────┐ │
-│ │ Flux (MJy/sr)                                                                                     │ │
-│ │ 3.0 ┼                                                  Band 5 (3.8-4.4)   Band 6 (4.4-5.0)        │ │
-│ │     │                                                  ┌──────────────┐   ┌──────────────┐        │ │
-│ │ 2.0 ┼                                                  │              │   │   * (Peak)   │        │ │
-│ │     │                                                  │              │───│──/ \         │        │ │
-│ │ 1.0 ┼        Band 1       Band 2       Band 3          │              │   │ /    \       │        │ │
-│ │     │      ┌────────┐   ┌────────┐   ┌────────┐        │              │   │/      \      │        │ │
-│ │ 0.0 ┼──────┴────────┴───┴────────┴───┴────────┴────────┴──────────────┴───┴────────┴──────┘      │ │
-│ │     0.75 µm                    2.0 µm                     3.3 µm (CH4)             5.00 µm        │ │
-│ └───────────────────────────────────────────────────────────────────────────────────────────────────┘ │
-│ [● Epoch 1 (Cyan)] [● Epoch 2 (Amber)] [▲ Source Confusion] [♦ Diffraction Spike] [★ Cosmic Ray]      │
-├───────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ Status: READY · IRSA Connected · Current Object: WISE 0855-0714 · WCS: RA---TAN / DEC--TAN · Pixel: 1.17"   │
-└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🪐 SPHEREx Planet X Hunter   [🌈 102] [🔥 Thermal] [🔵 Near-IR] [🧪 CH₄] [+ Custom]   [🔭 CDS: ON/OFF] │
+├─────────────────────────────────────────────────────────────────────────────┬──────────────────────────┤
+│                                                                             │ 🎯 TARGET PRESETS        │
+│                   🌌 FULLSCREEN SPHEREx VIEWPORT (>80% SCREEN)              │ • Planet X Cand          │
+│                                                                             │ • WISE 0855 (Y-Dwarf)    │
+│   • 🖱️ SCROLL MOUSE WHEEL  -> Smooth Zoom In / Zoom Out (FOV 1' to 30')     │ • Barnard's Star (M4Ve)  │
+│   • ✋ CLICK & HOLD + DRAG  -> Pan anywhere (1:1 lockstep synced with CDS)   │ • R Draconis (Variable)  │
+│   • ⚡ HOLD RIGHT-CLICK + SCROLL -> Instant 102 Light Band Scrubbing         ├──────────────────────────┤
+│   • 🎯 DOUBLE-CLICK         -> Instantly re-center coordinates              │ 🧭 COORDINATES & ZOOM    │
+│                                                                             │ • RA / Dec (HMS / Deg)   │
+│                      (Cyan: E1)         (Magenta: E2)                       │ • FOV Slider             │
+│                           ○──────────────────●                              ├──────────────────────────┤
+│                                                                             │ 📋 DISCOVERY DOSSIER     │
+│                                                                             │ • 6-Mo Shift: 3.82"      │
+│   ┌──────────────────────────────────────────────────────────────────────┐  │ • Est. Dist: ~420 AU     │
+│   │ [Δ Diff (E2-E1)] [⚡ Auto-Blink] [Epoch 1] [Epoch 2] [Co-Add]        │  │ • Blackbody: ~38 K       │
+│   │ (Floating In-Canvas Glass HUD)                                       │  │ • Gaia Match: Dark 🟢    │
+│   └──────────────────────────────────────────────────────────────────────┘  ├──────────────────────────┤
+│                                                                             │ 📊 102-BAND SPECTRUM     │
+│ ↔ [DRAGGABLE SPLITTER HANDLE: Click & Drag to resize sidebar 210px - 550px] │ • Active Band Needle     │
+│                                                                             │ • [Export Dossier CSV]   │
+└─────────────────────────────────────────────────────────────────────────────┴──────────────────────────┘
 ```
 
-### 4.2 UI State Machine Transitions
+### 4.2 Interactive Mouse Gestures & Ergonomics
+1. **Left-Click + Hold & Drag:** Smoothly pans the celestial field. Directly synchronized with the adjacent CDS Aladin context map (10px shift on one shifts 10px on the other). Slider thumb clicks are isolated to prevent panning conflicts.
+2. **Mouse Scroll Wheel:** Continuous non-linear Field-of-View zoom from 1.0 arcmin (PSF core) to 30.0 arcmin (wide survey scan).
+3. **⚡ Hold Right-Click + Scroll Wheel:** Rapidly scrubs forward and backward across all 102 SPHEREx spectral channels ($0.75\,\mu\text{m}\text{ to }5.00\,\mu\text{m}$) without requiring mouse movement to a slider.
+4. **Draggable Sidebar Splitter:** Allows users to expand or shrink the right sidebar between 210px and 550px by dragging the divider bar.
+5. **Clean Viewport:** The sky field remains completely clear without fixed center dots or distracting reticle overlays.
 
 ```mermaid
 stateDiagram-v2

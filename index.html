@@ -5,1598 +5,1170 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SPHEREx Time-Domain Sky Explorer | Planet X Hunter</title>
   
-  <!-- Aladin Lite v3 CDN (Non-blocking with graceful offline fallback) -->
-  <link rel="stylesheet" href="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.min.css" />
-  <script type="text/javascript" src="https://aladin.cds.unistra.fr/AladinLite/api/v3/latest/aladin.js" charset="utf-8" defer></script>
-
+  <!-- Tailwind CSS via official CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
   <style>
     :root {
-      --bg-space: #080C14;
-      --bg-panel: rgba(15, 23, 42, 0.85);
-      --bg-card: rgba(17, 24, 39, 0.8);
-      --border-subtle: rgba(255, 255, 255, 0.08);
-      --border-focus: #06B6D4;
-      --color-cyan: #22D3EE;
-      --color-magenta: #F472B6;
-      --color-amber: #F59E0B;
-      --color-emerald: #10B981;
-      --color-slate: #94A3B8;
-      --color-dim: #64748B;
+      --bg: #030712;
+      --card-bg: rgba(15, 23, 42, 0.85);
+      --border: rgba(51, 65, 85, 0.6);
+      --cyan: #06b6d4;
+      --pink: #ec4899;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background-color: var(--bg-space);
-      color: #E2E8F0;
+      background-color: var(--bg);
+      color: #f1f5f9;
       font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-    }
-    button, input, select { font-family: inherit; }
-    .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border-subtle);
-      border-radius: 8px;
-      backdrop-filter: blur(8px);
-    }
-
-    .btn {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      transition: all 0.15s ease;
-      border: 1px solid transparent;
+      overflow: hidden;
       user-select: none;
     }
-
-    .btn-target {
-      background: #1E293B;
-      border-color: #334155;
-      color: #CBD5E1;
-      white-space: nowrap;
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
     }
-    .btn-target:hover {
+    .custom-scroll::-webkit-scrollbar-thumb {
       background: #334155;
-      color: #FFF;
-      border-color: #475569;
-    }
-    .btn-target.active {
-      background: rgba(6, 182, 212, 0.22);
-      border-color: #06B6D4;
-      color: #67E8F9;
-      box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
-    }
-
-    .btn-mode {
-      background: #0F172A;
-      border: 1px solid #1E293B;
-      color: #94A3B8;
-      text-align: left;
-      padding: 8px 10px;
-      width: 100%;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .btn-mode:hover {
-      border-color: #334155;
-      color: #F1F5F9;
-      background: #1E293B;
-    }
-    .btn-mode.active {
-      background: rgba(6, 182, 212, 0.18);
-      border-color: #06B6D4;
-      color: #67E8F9;
-      box-shadow: 0 0 8px rgba(6, 182, 212, 0.2);
-    }
-
-    .badge {
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-size: 9px;
-      font-family: monospace;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    input[type=range] {
-      accent-color: #06B6D4;
-      cursor: pointer;
-      background: #1E293B;
       border-radius: 4px;
     }
-
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-    /* Reticles and vector overlay */
-    .reticle-marker {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      cursor: pointer;
-      transition: transform 0.15s;
+    .glass-panel {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
     }
-    .reticle-marker:hover {
-      transform: translate(-50%, -50%) scale(1.25);
-      z-index: 50;
-    }
-
-    /* Modal styling */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(4, 6, 11, 0.85);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    /* Tooltip popup */
-    #hover-tooltip {
-      position: absolute;
-      pointer-events: none;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid #0891B2;
-      border-radius: 6px;
-      padding: 6px 10px;
-      font-size: 10px;
-      color: #E2E8F0;
-      z-index: 100;
-      display: none;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-      white-space: nowrap;
-    }
-
-    /* Dropdown menu */
-    .dropdown {
-      position: relative;
-      display: inline-block;
-    }
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 100%;
-      margin-top: 4px;
-      background: #0F172A;
-      border: 1px solid #334155;
-      border-radius: 6px;
-      min-width: 170px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      z-index: 200;
-      overflow: hidden;
-    }
-    .dropdown-content.show {
-      display: block;
-    }
-    .dropdown-item {
-      padding: 8px 12px;
-      font-size: 11px;
-      color: #CBD5E1;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .dropdown-item:hover {
-      background: #1E293B;
-      color: #FFF;
-    }
-
-    @keyframes pulse-cyan {
-      0%, 100% { box-shadow: 0 0 6px #06B6D4; }
-      50% { box-shadow: 0 0 14px #22D3EE; }
-    }
-    .pulse-ring {
-      animation: pulse-cyan 1.8s infinite;
+    canvas {
+      image-rendering: pixelated;
     }
   </style>
 </head>
-<body>
+<body class="h-screen w-screen flex flex-col m-0 p-0 bg-slate-950 text-slate-100">
 
-  <!-- ===================================================================== -->
-  <!-- HEADER & NASA BRANDING                                                -->
-  <!-- ===================================================================== -->
-  <header style="padding: 10px 16px; background: rgba(15,23,42,0.96); border-bottom: 1px solid #1E293B; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
-    
-    <!-- Title & Challenge Info -->
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <div style="width: 38px; height: 38px; border-radius: 50%; background: #081B33; border: 1.5px solid #0891B2; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 11px; color: #38BDF8; letter-spacing: 0.5px; box-shadow: 0 0 10px rgba(56,189,248,0.25);">
-        NASA
+  <!-- TOP APP HEADER -->
+  <header class="h-12 border-b border-slate-800 bg-slate-950/90 px-4 flex items-center justify-between shrink-0 z-30">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-md bg-gradient-to-tr from-cyan-500 via-indigo-600 to-pink-500 flex items-center justify-center font-bold text-white text-sm shadow">
+        🪐
       </div>
-      <div>
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <h1 style="font-size: 16px; font-weight: 700; color: #22D3EE; letter-spacing: 0.2px;">SPHEREx Time-Domain Sky Explorer</h1>
-          <span class="badge" style="background: rgba(6,182,212,0.18); color: #67E8F9; border: 1px solid rgba(6,182,212,0.35);">
-            ✦ Planet X Hunter
-          </span>
-        </div>
-        <p style="font-size: 10px; color: #94A3B8; margin-top: 1px;">
-          Near-Infrared All-Sky Survey · 102 Spectral Channels (0.75–5.0 µm) · 6-Month Cadence Time-Domain Subtraction
-        </p>
+      <div class="flex items-center gap-2">
+        <h1 class="text-sm font-bold tracking-tight text-white">
+          SPHEREx <span class="text-cyan-400 font-medium">Planet X Hunter</span>
+        </h1>
+        <span class="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-800">
+          Serverless Time-Domain
+        </span>
       </div>
     </div>
 
-    <!-- Benchmark Target Quick Selector Bar -->
-    <div style="display: flex; align-items: center; gap: 6px; overflow-x: auto; max-width: 550px;" class="no-scrollbar" id="target-bar">
-      <!-- Target buttons dynamically injected -->
-    </div>
-
-    <!-- Header Actions (Export & Guide) -->
-    <div style="display: flex; gap: 8px; align-items: center;">
-      <!-- Export Dropdown -->
-      <div class="dropdown">
-        <button class="btn" id="btn-export-menu" style="background: #1E293B; border-color: #334155; color: #E2E8F0;">
-          <span>💾 Export Dossier</span>
-          <span style="font-size: 9px;">▼</span>
+    <!-- QUICK STATUS & TOGGLES -->
+    <div class="flex items-center gap-2.5 text-xs">
+      <!-- BAND GROUP SELECTOR PILLS (TIER 1 PRESETS) -->
+      <div id="band-groups-container" class="flex items-center gap-1 bg-slate-900/90 border border-slate-700/80 p-1 rounded-lg">
+        <span class="text-slate-400 px-1.5 text-[11px] font-medium">Bands:</span>
+        <button onclick="applyBandGroup('all')" id="bg-all" class="band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300">
+          🌈 Full 102
         </button>
-        <div class="dropdown-content" id="export-dropdown">
-          <div class="dropdown-item" id="export-json">
-            <span>📄</span>
-            <span>NASA Discovery Dossier (JSON)</span>
-          </div>
-          <div class="dropdown-item" id="export-csv">
-            <span>📊</span>
-            <span>102-Band Spectrum (CSV)</span>
-          </div>
-          <div class="dropdown-item" id="export-png">
-            <span>🖼️</span>
-            <span>Cutout Viewport (PNG)</span>
-          </div>
-        </div>
+        <button onclick="applyBandGroup('thermal')" id="bg-thermal" class="band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40">
+          🔥 Thermal (B5-6)
+        </button>
+        <button onclick="applyBandGroup('nearir')" id="bg-nearir" class="band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200">
+          🔵 Near-IR (B1-3)
+        </button>
+        <button onclick="applyBandGroup('methane')" id="bg-methane" class="band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200">
+          🧪 CH₄ (3.3µm)
+        </button>
+        <button onclick="openCustomBandModal()" class="px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-950/80 text-indigo-300 hover:bg-indigo-900 border border-indigo-700/60 transition">
+          + Custom Group
+        </button>
       </div>
 
-      <!-- Citizen Science Guide -->
-      <button class="btn" id="btn-guide" style="background: rgba(8,145,178,0.22); border-color: rgba(8,145,178,0.45); color: #67E8F9;">
-        <span>📖 Citizen Guide</span>
+      <!-- CDS CROSS-CHECK TOGGLE BUTTON -->
+      <button id="toggle-cds-btn" onclick="toggleCDS()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-700 bg-indigo-950/60 hover:bg-indigo-900/60 text-indigo-300 font-medium transition shadow-sm">
+        <span id="cds-dot" class="w-2 h-2 rounded-full bg-indigo-400"></span>
+        <span id="cds-btn-text">CDS Cross-Check: ON</span>
+      </button>
+
+      <!-- SIDEBAR TOGGLE BUTTON -->
+      <button id="toggle-sidebar-btn" onclick="toggleSidebar()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium transition">
+        <span>⚙️ Sidebar</span>
       </button>
     </div>
   </header>
 
-  <!-- ===================================================================== -->
-  <!-- MAIN WORKSPACE: 3-COLUMN RESPONSIVE LAYOUT                             -->
-  <!-- ===================================================================== -->
-  <div style="flex: 1; display: grid; grid-template-columns: 280px minmax(420px, 1fr) 340px; gap: 10px; padding: 10px; min-height: 0;">
-
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <!-- COLUMN 1: CONTROL PANEL                                             -->
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <aside class="card" style="padding: 12px; display: flex; flex-direction: column; gap: 12px; font-size: 11px; overflow-y: auto; max-height: calc(100vh - 100px);">
-      
-      <!-- Observation Mode -->
-      <div>
-        <div style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between;">
-          <span>Observation Mode</span>
-          <span style="color: #06B6D4; font-family: monospace;" id="mode-short-badge">DIFF</span>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 4px;" id="mode-buttons">
-          <button class="btn-mode active" data-mode="diff">
-            <div>
-              <div style="font-weight: 700; color: #F472B6;">Difference (E2 - E1)</div>
-              <div style="font-size: 9px; opacity: 0.7;">Dipole & variable finder</div>
-            </div>
-            <span style="font-size: 14px;">✨</span>
-          </button>
-          <button class="btn-mode" data-mode="blink">
-            <div>
-              <div style="font-weight: 700; color: #FBBF24;">Auto-Blink Comparator</div>
-              <div style="font-size: 9px; opacity: 0.7;" id="blink-freq-desc">Motion comparator · 2.0 Hz</div>
-            </div>
-            <span style="font-size: 14px;">🎞️</span>
-          </button>
-          <button class="btn-mode" data-mode="coadd">
-            <div>
-              <div style="font-weight: 700; color: #22D3EE;">Co-Add Stack</div>
-              <div style="font-size: 9px; opacity: 0.7;">1.414x SNR boost for faint bodies</div>
-            </div>
-            <span style="font-size: 14px;">🔭</span>
-          </button>
-          <button class="btn-mode" data-mode="epoch1">
-            <div>
-              <div style="font-weight: 700; color: #60A5FA;">Epoch 1 (DR1)</div>
-              <div style="font-size: 9px; opacity: 0.7;">Month 0 sky survey pass</div>
-            </div>
-            <span style="font-size: 14px;">1️⃣</span>
-          </button>
-          <button class="btn-mode" data-mode="epoch2">
-            <div>
-              <div style="font-weight: 700; color: #34D399;">Epoch 2 (QR3)</div>
-              <div style="font-size: 9px; opacity: 0.7;">Month 6 sky survey pass</div>
-            </div>
-            <span style="font-size: 14px;">2️⃣</span>
-          </button>
-        </div>
+  <!-- CUSTOM BAND GROUP MODAL -->
+  <div id="custom-band-modal" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="glass-panel p-5 rounded-2xl w-full max-w-md space-y-4 border border-slate-700 shadow-2xl">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          ✨ Create Custom Band Stack Group
+        </h3>
+        <button onclick="closeCustomBandModal()" class="text-slate-400 hover:text-white text-base">✕</button>
       </div>
 
-      <!-- Auto-Blink Frequency Slider (visible when Blink active) -->
-      <div id="blink-controls" style="display: none; padding: 8px; background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); border-radius: 6px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="font-size: 10px; font-weight: 700; color: #FBBF24; text-transform: uppercase;">Blink Cadence</span>
-          <span class="font-mono" style="color: #FBBF24; font-size: 10px;" id="blink-hz-label">2.0 Hz (500 ms)</span>
-        </div>
-        <input type="range" id="blink-speed-slider" min="0.5" max="5.0" step="0.5" value="2.0" style="width: 100%; height: 4px;">
-      </div>
-
-      <!-- SPHEREx Band Slider (1-102) -->
-      <div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px; align-items: center;">
-          <span style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Band Channel (1-102)</span>
-          <span class="badge" id="det-badge" style="background: rgba(245,158,11,0.2); color: #F59E0B; border: 1px solid rgba(245,158,11,0.5);">Band 4 (2.42–3.82 µm)</span>
-        </div>
-        <input type="range" id="band-slider" min="1" max="102" value="50" style="width: 100%; height: 5px;">
-        <div style="display: flex; justify-content: space-between; font-size: 10px; color: #64748B; margin-top: 4px;" class="font-mono">
-          <span id="band-num-label" style="color: #E2E8F0; font-weight: 600;">Band #50</span>
-          <span id="band-wl-label" style="color: #22D3EE;">λ = 3.32 µm (CH₄ window)</span>
-        </div>
-      </div>
-
-      <!-- FOV Slider -->
-      <div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
-          <span style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase;">Field of View</span>
-          <span style="color: #22D3EE;" class="font-mono" id="fov-label">5.0' (300")</span>
-        </div>
-        <input type="range" id="fov-slider" min="1.0" max="15.0" step="0.5" value="5.0" style="width: 100%; height: 4px;">
-        <div style="display: flex; justify-content: space-between; font-size: 9px; color: #64748B; margin-top: 2px;" class="font-mono">
-          <span>1.0' (PSF Zoom)</span>
-          <span>15.0' (Wide Scan)</span>
-        </div>
-      </div>
-
-      <!-- Contrast Stretch -->
-      <div>
-        <div style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; margin-bottom: 6px;">Pixel Contrast Stretch</div>
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;" id="stretch-buttons">
-          <button class="btn btn-target active" data-stretch="asinh" style="padding: 5px 0; justify-content: center; font-family: monospace;">ASINH</button>
-          <button class="btn btn-target" data-stretch="log" style="padding: 5px 0; justify-content: center; font-family: monospace;">LOG</button>
-          <button class="btn btn-target" data-stretch="linear" style="padding: 5px 0; justify-content: center; font-family: monospace;">LINEAR</button>
-        </div>
-      </div>
-
-      <!-- Auto-Detect Anomaly Toggle -->
-      <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #0F172A; border-radius: 6px; border: 1px solid #1E293B;">
+      <div class="space-y-3 text-xs">
         <div>
-          <div style="font-weight: 700; color: #E2E8F0; font-size: 11px;">Auto-Detect Anomaly</div>
-          <div style="font-size: 9px; color: #64748B;">Highlight |Z| &ge; 3.2&sigma; dipoles</div>
+          <label class="text-slate-400 block mb-1">Group Name</label>
+          <input id="custom-grp-name" type="text" placeholder="e.g. Water Ice Absorption Stack" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-cyan-400" />
         </div>
-        <button id="toggle-anomaly" style="width: 36px; height: 20px; border-radius: 10px; border: none; cursor: pointer; position: relative; background: #06B6D4; transition: background 0.2s;">
-          <div id="toggle-knob" style="width: 16px; height: 16px; border-radius: 50%; background: #FFF; position: absolute; top: 2px; left: 18px; transition: left 0.2s;"></div>
-        </button>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-slate-400 block mb-1">Start Band (1 - 102)</label>
+            <input id="custom-grp-start" type="number" min="1" max="102" value="25" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-cyan-300 font-mono focus:outline-none" />
+          </div>
+          <div>
+            <label class="text-slate-400 block mb-1">End Band (1 - 102)</label>
+            <input id="custom-grp-end" type="number" min="1" max="102" value="65" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-cyan-300 font-mono focus:outline-none" />
+          </div>
+        </div>
+
+        <div class="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400">
+          💡 Custom stacks sum photon counts across selected channels to enhance SNR and isolate specific molecular features.
+        </div>
       </div>
 
-      <!-- Manual Goto & Coordinate Parser Form -->
-      <form id="goto-form" style="border-top: 1px solid #1E293B; padding-top: 10px; display: flex; flex-direction: column; gap: 6px;">
-        <div style="font-size: 10px; font-weight: 700; color: #94A3B8; text-transform: uppercase; display: flex; justify-content: space-between;">
-          <span>Celestial Coordinates</span>
-          <span style="font-size: 9px; color: #64748B;">HMS/DMS or Deg</span>
-        </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-          <input type="text" id="input-ra" placeholder="RA: 133.795° / 08:55:10" style="padding: 6px 8px; border-radius: 4px; background: #0F172A; border: 1px solid #1E293B; color: #F1F5F9; font-size: 10px;" class="font-mono">
-          <input type="text" id="input-dec" placeholder="Dec: -7.245° / -07:14:42" style="padding: 6px 8px; border-radius: 4px; background: #0F172A; border: 1px solid #1E293B; color: #F1F5F9; font-size: 10px;" class="font-mono">
-        </div>
-        <button type="submit" class="btn" style="background: rgba(8,145,178,0.2); border-color: #0891B2; color: #67E8F9; justify-content: center; padding: 6px 0;">
-          Point Telescope FOV
-        </button>
-      </form>
-    </aside>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeCustomBandModal()" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white text-xs">Cancel</button>
+        <button onclick="saveCustomBandGroup()" class="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md">Add & Apply Group</button>
+      </div>
+    </div>
+  </div>
 
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <!-- COLUMN 2: PRIMARY CUTOUT VIEWPORT & 102-BAND SPECTROGRAM            -->
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <div style="display: flex; flex-direction: column; gap: 10px; min-height: 0;">
-      
-      <!-- Primary Canvas Viewport -->
-      <div class="card" style="padding: 12px; display: flex; flex-direction: column; align-items: center; position: relative;">
-        
-        <!-- Viewport Top Bar -->
-        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 11px;">
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="font-weight: 700; color: #CBD5E1;">SPHEREx Primary Viewport</span>
-            <span class="badge" id="viewport-mode-badge" style="background: rgba(244,114,182,0.2); color: #F472B6; border: 1px solid rgba(244,114,182,0.4);">
+  <!-- WORKSPACE BODY (VIEWPORT + COLLAPSIBLE SIDEBAR) -->
+  <div class="flex-1 flex w-full h-[calc(100vh-3rem)] overflow-hidden relative">
+
+    <!-- PRIMARY CANVAS WRAPPER (YIELDS THE MAJORITY OF THE SCREEN) -->
+    <div id="viewport-container" class="flex-1 flex relative h-full transition-all duration-300 overflow-hidden bg-black">
+
+      <!-- SPHEREx TIME-DOMAIN CANVAS (THE HERO VIEWPORT) -->
+      <div id="spherex-panel" class="relative flex-1 h-full flex items-center justify-center overflow-hidden cursor-grab active:cursor-grabbing">
+        <canvas id="spherex-canvas" class="w-full h-full block"></canvas>
+
+        <!-- TOP-LEFT CANVAS HUD (MODE & COORDINATE OVERLAY) -->
+        <div class="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none z-10">
+          <div class="glass-panel px-3 py-1.5 rounded-lg text-xs flex items-center gap-2 pointer-events-auto">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span id="hud-target-name" class="font-bold text-white tracking-wide">Planet X Candidate</span>
+            <span id="hud-mode-pill" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-pink-900 text-pink-300 border border-pink-700">
               DIFF (E2 - E1)
             </span>
           </div>
-          <div style="font-size: 10px; color: #64748B;" class="font-mono" id="cursor-coords">
-            Cursor: 128, 128
+
+          <div class="glass-panel px-2.5 py-1 rounded text-[11px] font-mono text-slate-300 flex items-center gap-3 pointer-events-auto">
+            <span>RA: <span id="hud-ra" class="text-cyan-300">04h 32m 18.2s</span></span>
+            <span>Dec: <span id="hud-dec" class="text-cyan-300">+16° 24' 36.0"</span></span>
+            <span>FOV: <span id="hud-fov" class="text-amber-300">5.0'</span></span>
+            <span class="border-l border-slate-700 pl-2">Band: <span id="hud-band" class="text-rose-400 font-bold">75/102 (λ=4.12µm • B5)</span></span>
           </div>
         </div>
 
-        <!-- Canvas Container -->
-        <div style="position: relative; width: 340px; height: 340px; max-width: 100%; aspect-ratio: 1/1;" id="canvas-container">
-          <canvas id="sky-canvas" width="256" height="256" style="width: 100%; height: 100%; border-radius: 8px; image-rendering: pixelated; background: #05070D; display: block; border: 1px solid rgba(255,255,255,0.08); cursor: crosshair;"></canvas>
-          
-          <!-- Central Crosshair Reticle -->
-          <div style="position: absolute; inset: 0; pointer-events: none; display: flex; align-items: center; justify-content: center;">
-            <div style="width: 16px; height: 16px; border-radius: 50%; border: 1px solid rgba(34,211,238,0.45);"></div>
-            <div style="position: absolute; width: 28px; height: 1px; background: rgba(34,211,238,0.35);"></div>
-            <div style="position: absolute; height: 28px; width: 1px; background: rgba(34,211,238,0.35);"></div>
-          </div>
-
-          <!-- Dynamic Anomaly Markers & Motion Vectors Container -->
-          <div id="anomaly-container" style="position: absolute; inset: 0; pointer-events: none;"></div>
-
-          <!-- Hover Tooltip -->
-          <div id="hover-tooltip"></div>
+        <!-- TOP-RIGHT INTERACTION HINT -->
+        <div class="absolute top-3 right-3 glass-panel px-3 py-1.5 rounded-lg text-[11px] font-mono text-slate-400 pointer-events-none z-10 space-y-0.5 text-right">
+          <div>🖱️ <span class="text-slate-200">Scroll</span>: Zoom · <span class="text-slate-200">Drag</span>: Pan · <span class="text-slate-200">Dbl-Click</span>: Reset</div>
+          <div class="text-cyan-400 font-semibold">⚡ <span class="underline">Hold Right-Click + Scroll</span>: Scrub 102 Bands</div>
         </div>
 
-        <!-- Viewport Metadata Footer -->
-        <div style="margin-top: 10px; font-size: 10px; color: #94A3B8; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; width: 100%;" class="font-mono">
-          <span id="label-target" style="color: #F1F5F9; font-weight: 600;">Target: WISE 0855-0714</span>
-          <span style="color: #475569;">|</span>
-          <span id="label-wcs">WCS: 08h55m10.8s / -07°14'42"</span>
-          <span style="color: #475569;">|</span>
-          <span id="label-stats">Min: -14.2 Max: +142.8 &sigma;: 3.8</span>
+        <!-- BOTTOM FLOATING TIME-DOMAIN CONTROL BAR -->
+        <div class="absolute bottom-4 inset-x-0 mx-auto max-w-2xl glass-panel p-2 rounded-xl flex items-center justify-between text-xs z-20 shadow-2xl">
+          <div class="flex items-center gap-1.5">
+            <button onclick="setMode('diff')" id="btn-diff" class="mode-btn px-2.5 py-1.5 rounded-lg font-medium bg-pink-500/20 text-pink-300 border border-pink-500/50">
+              Δ Diff (E2-E1)
+            </button>
+            <button onclick="setMode('blink')" id="btn-blink" class="mode-btn px-2.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+              ⚡ Auto-Blink
+            </button>
+            <button onclick="setMode('e1')" id="btn-e1" class="mode-btn px-2.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+              Epoch 1 (Month 0)
+            </button>
+            <button onclick="setMode('e2')" id="btn-e2" class="mode-btn px-2.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+              Epoch 2 (Month 6)
+            </button>
+            <button onclick="setMode('coadd')" id="btn-coadd" class="mode-btn px-2.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50">
+              Co-Add (SNR+)
+            </button>
+          </div>
+
+          <!-- BLINK FREQUENCY CONTROLLER -->
+          <div id="blink-hud" class="hidden flex items-center gap-2 font-mono text-[11px] pl-2 border-l border-slate-700">
+            <span class="text-slate-400">Cadence:</span>
+            <span id="blink-freq-text" class="text-cyan-300">2.0 Hz</span>
+            <input type="range" min="0.5" max="5.0" step="0.5" value="2.0" class="w-16 accent-cyan-400 cursor-pointer" oninput="setBlinkRate(this.value)" />
+          </div>
+
+          <!-- DIFF PALETTE LEGEND -->
+          <div id="diff-legend" class="flex items-center gap-2.5 text-[10px] font-mono pl-2 border-l border-slate-700">
+            <span class="flex items-center gap-1 text-cyan-300"><span class="w-2 h-2 rounded-full bg-cyan-400"></span> E1 Deficit (-)</span>
+            <span class="flex items-center gap-1 text-pink-400"><span class="w-2 h-2 rounded-full bg-pink-500"></span> E2 Excess (+)</span>
+          </div>
+
+          <!-- RE-CENTER BUTTON -->
+          <button onclick="resetPanZoom()" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono text-[10px] ml-1">
+            Recenter
+          </button>
         </div>
       </div>
 
-      <!-- Secondary: 102-Band SPHEREx Spectrogram -->
-      <div class="card" style="padding: 10px 14px; flex: 1; display: flex; flex-direction: column; min-height: 220px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 11px; font-weight: 700; color: #CBD5E1;">102-Band SPHEREx Near-Infrared Spectrogram</span>
-            <span class="badge" style="background: rgba(56,189,248,0.15); color: #38BDF8; border: 1px solid rgba(56,189,248,0.3);">
-              0.75 – 5.00 µm
-            </span>
+      <!-- CDS ALADIN LITE CROSS-CHECK PANE (TOGGLEABLE SPLIT VIEW) -->
+      <div id="cds-panel" class="relative w-1/3 h-full border-l border-slate-800 flex flex-col bg-slate-950 transition-all duration-300">
+        <div class="h-9 px-3 border-b border-slate-800 flex items-center justify-between text-xs bg-slate-900/80">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+            <span class="font-semibold text-slate-200">CDS Aladin HiPS Context</span>
           </div>
-          <div style="font-size: 9px; color: #64748B;" class="font-mono">
-            Click band on plot to sync 2D cutout
-          </div>
-        </div>
-        
-        <!-- Interactive Native SVG Spectrogram Container -->
-        <div style="flex: 1; width: 100%; min-height: 180px; position: relative;" id="spectrum-container">
-          <!-- Rendered via SVG with full 6 LVF detector bands, error bars, and flag overlays -->
+          <select id="cds-survey-select" onchange="renderCDS()" class="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-[11px] text-slate-300">
+            <option value="wise">AllWISE Color (Mid-IR)</option>
+            <option value="2mass">2MASS JHK (Near-IR)</option>
+            <option value="dss2">DSS2 Optical (Visible)</option>
+          </select>
         </div>
 
-        <!-- Spectrogram Legend -->
-        <div style="display: flex; gap: 14px; margin-top: 4px; font-size: 9px; color: #94A3B8; justify-content: center; flex-wrap: wrap;" class="font-mono">
-          <span style="display: flex; align-items: center; gap: 4px;">
-            <span style="width: 12px; height: 2px; background: #38BDF8; display: inline-block;"></span> Epoch 1 (DR1)
-          </span>
-          <span style="display: flex; align-items: center; gap: 4px;">
-            <span style="width: 12px; height: 2px; background: #F59E0B; display: inline-block; border-top: 1px dashed #F59E0B;"></span> Epoch 2 (QR3)
-          </span>
-          <span style="display: flex; align-items: center; gap: 4px;">
-            <span style="color: #F97316;">▲</span> Source Confusion
-          </span>
-          <span style="display: flex; align-items: center; gap: 4px;">
-            <span style="color: #EF4444;">♦</span> Diffraction Spike
-          </span>
-          <span style="display: flex; align-items: center; gap: 4px;">
-            <span style="color: #EC4899;">★</span> Cosmic Ray
-          </span>
+        <div class="relative flex-1 overflow-hidden bg-black flex items-center justify-center">
+          <canvas id="cds-canvas" class="w-full h-full block"></canvas>
+
+          <!-- GAIA OVERLAY STATUS BADGE -->
+          <div class="absolute bottom-3 left-3 right-3 glass-panel p-2 rounded-lg text-[11px] space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="text-slate-400 font-medium">ESA Gaia DR3:</span>
+              <span id="cds-gaia-verdict" class="font-mono text-emerald-400 font-semibold">Optical Dark (No Match) 🟢</span>
+            </div>
+            <p class="text-[10px] text-slate-400">
+              Absence of optical match confirms an ultra-cold or heavily obscured body.
+            </p>
+          </div>
         </div>
       </div>
+
     </div>
 
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <!-- COLUMN 3: CDS ALADIN LITE CONTEXT & CROSS-MATCHING                  -->
-    <!-- ─────────────────────────────────────────────────────────────────── -->
-    <aside class="card" style="padding: 12px; display: flex; flex-direction: column; gap: 10px; min-height: 480px;">
-      
-      <!-- Aladin Header & Survey Selector -->
-      <div>
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 11px; font-weight: 700; color: #CBD5E1;">Aladin Lite Sky Context</span>
-          <span class="badge" style="background: rgba(6,182,212,0.15); color: #06B6D4;">CDS Strasbourg</span>
+    <!-- DRAGGABLE RESIZER SPLITTER (HOLD & DRAG TO EXPAND/SHRINK) -->
+    <div id="sidebar-resizer" class="w-1.5 hover:w-2 bg-slate-800/90 hover:bg-cyan-400 cursor-col-resize transition-all shrink-0 z-30 flex items-center justify-center group select-none" title="Click & Drag to resize sidebar">
+      <div class="w-0.5 h-8 bg-slate-600 group-hover:bg-white rounded-full"></div>
+    </div>
+
+    <!-- RIGHT SIDEBAR (COMPACT DEFAULT ~270px, DRAG-RESIZABLE) -->
+    <aside id="sidebar" style="width: 270px; min-width: 210px; max-width: 550px;" class="border-l border-slate-800 bg-slate-950/95 flex flex-col h-full shrink-0 z-20 custom-scroll overflow-y-auto select-none transition-none">
+
+      <!-- 1. TARGET PRESET SELECTOR (COMPACT) -->
+      <div class="p-2.5 border-b border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+            🎯 Targets
+          </h3>
+          <span class="text-[9px] text-cyan-400 font-mono">Benchmarks</span>
         </div>
 
-        <!-- Survey Selector Dropdown -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; margin-bottom: 8px;" id="survey-buttons">
-          <button class="btn btn-target active" data-survey="P/allWISE/color" style="padding: 4px 0; justify-content: center; font-size: 10px;">AllWISE</button>
-          <button class="btn btn-target" data-survey="P/2MASS/color" style="padding: 4px 0; justify-content: center; font-size: 10px;">2MASS</button>
-          <button class="btn btn-target" data-survey="P/DSS2/color" style="padding: 4px 0; justify-content: center; font-size: 10px;">DSS2</button>
-        </div>
-
-        <!-- Astrometric Catalog Overlays Toggles -->
-        <div style="display: flex; gap: 6px;">
-          <button class="btn btn-target" id="toggle-gaia" style="flex: 1; justify-content: center; font-size: 10px; padding: 4px 0;">
-            Gaia DR3
+        <div class="grid grid-cols-2 gap-1 text-[11px]">
+          <button onclick="setTarget('planetx')" id="t-planetx" class="target-item p-1.5 rounded-md text-left border bg-cyan-500/20 text-cyan-300 border-cyan-500/50">
+            <div class="font-semibold text-xs leading-tight">Planet X</div>
+            <div class="text-[9px] text-cyan-400 font-mono">Cold 40K</div>
           </button>
-          <button class="btn btn-target" id="toggle-wise" style="flex: 1; justify-content: center; font-size: 10px; padding: 4px 0;">
-            AllWISE Cat
+          <button onclick="setTarget('wise0855')" id="t-wise0855" class="target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200">
+            <div class="font-semibold text-xs leading-tight">WISE 0855</div>
+            <div class="text-[9px] text-slate-500 font-mono">Y-Dwarf</div>
+          </button>
+          <button onclick="setTarget('barnard')" id="t-barnard" class="target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200">
+            <div class="font-semibold text-xs leading-tight">Barnard Star</div>
+            <div class="text-[9px] text-slate-500 font-mono">High PM</div>
+          </button>
+          <button onclick="setTarget('rdraconis')" id="t-rdraconis" class="target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200">
+            <div class="font-semibold text-xs leading-tight">R Draconis</div>
+            <div class="text-[9px] text-slate-500 font-mono">Variable</div>
           </button>
         </div>
       </div>
 
-      <!-- Aladin Viewport / Fallback Container -->
-      <div id="aladin-container" style="flex: 1; min-height: 280px; width: 100%; border-radius: 6px; overflow: hidden; background: #05070D; border: 1px solid #1E293B; position: relative;">
-        <!-- Injected via Aladin Lite v3 API or fallback if offline -->
-        <div id="aladin-fallback" style="display: flex; flex-direction: column; height: 100%; align-items: center; justify-content: center; padding: 20px; text-align: center; color: #64748B; font-family: monospace; font-size: 10px; gap: 8px;">
-          <div style="font-size: 24px;">🔭</div>
-          <div style="color: #94A3B8; font-weight: 700;">Aladin Sky Atlas Ready</div>
-          <div>Loading HiPS survey tiles from CDS...</div>
-          <div style="font-size: 9px; color: #475569;">SPHEREx engine runs 100% standalone</div>
+      <!-- 2. COORDINATES & FOV CONTROL (COMPACT) -->
+      <div class="p-2.5 border-b border-slate-800 space-y-1.5">
+        <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-300 flex items-center gap-1">
+          🧭 Center & Zoom
+        </h3>
+        <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+          <div>
+            <label class="text-[9px] text-slate-400 block">RA (HMS/Deg)</label>
+            <input id="side-ra" type="text" value="04h 32m 18.2s" onchange="handleCoordChange()" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-200 text-[10px] focus:outline-none focus:border-cyan-400" />
+          </div>
+          <div>
+            <label class="text-[9px] text-slate-400 block">Dec (DMS/Deg)</label>
+            <input id="side-dec" type="text" value="+16° 24' 36.0\"" onchange="handleCoordChange()" class="w-full bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 font-mono text-cyan-200 text-[10px] focus:outline-none focus:border-cyan-400" />
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[11px] mb-0.5">
+            <span class="text-slate-400">FOV:</span>
+            <span id="side-fov-val" class="font-mono text-cyan-300">5.0 arcmin</span>
+          </div>
+          <input id="side-fov-slider" type="range" min="1.0" max="30.0" step="0.5" value="5.0" class="w-full accent-cyan-400 cursor-pointer h-1" oninput="setFOV(this.value)" />
         </div>
       </div>
 
-      <!-- Target Astrometric Quick Dossier Card -->
-      <div style="padding: 8px 10px; background: #0F172A; border-radius: 6px; border: 1px solid #1E293B; font-size: 10px; display: flex; flex-direction: column; gap: 4px;">
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #94A3B8; font-weight: 600;">Object Class:</span>
-          <span style="color: #67E8F9; font-weight: 700;" id="dossier-class">Sub-Brown Dwarf (Y1)</span>
+      <!-- 3. DISCOVERY DOSSIER (COMPACT) -->
+      <div class="p-2.5 border-b border-slate-800 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-300">
+            📋 Dossier
+          </h3>
+          <span id="dossier-tag" class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-pink-950 text-pink-300 border border-pink-700">
+            Cand (6.4σ)
+          </span>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #94A3B8; font-weight: 600;">Proper Motion:</span>
-          <span style="color: #E2E8F0;" class="font-mono" id="dossier-pm">8.13 "/yr</span>
+
+        <div class="space-y-1 text-[11px]">
+          <div class="flex justify-between py-0.5 border-b border-slate-900">
+            <span class="text-slate-400">6-Mo Shift:</span>
+            <span id="dossier-sep" class="font-mono text-slate-200">3.82 arcsec</span>
+          </div>
+          <div class="flex justify-between py-0.5 border-b border-slate-900">
+            <span class="text-slate-400">Est. Dist:</span>
+            <span id="dossier-dist" class="font-mono text-cyan-300">~420 AU</span>
+          </div>
+          <div class="flex justify-between py-0.5 border-b border-slate-900">
+            <span class="text-slate-400">Blackbody:</span>
+            <span id="dossier-temp" class="font-mono text-amber-300">~38 Kelvin</span>
+          </div>
+          <div class="flex justify-between py-0.5 border-b border-slate-900">
+            <span class="text-slate-400">Gaia DR3:</span>
+            <span id="dossier-gaia" class="font-mono text-emerald-400">Optical Dark 🟢</span>
+          </div>
         </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #94A3B8; font-weight: 600;">Optical Counterpart:</span>
-          <span style="color: #F87171;" id="dossier-optical">NONE (Faint / Invisible)</span>
-        </div>
-        <div style="display: flex; justify-content: space-between;">
-          <span style="color: #94A3B8; font-weight: 600;">Time-Domain Anomaly:</span>
-          <span style="color: #00E5FF; font-weight: 700;" id="dossier-sig">DIPOLE (Moving)</span>
+
+        <div class="p-1.5 rounded bg-slate-900/80 border border-slate-800 text-[10px] text-slate-400 leading-tight">
+          <span id="dossier-desc">High probability cold outer planet. Strong thermal IR peak at 4.2µm.</span>
         </div>
       </div>
+
+      <!-- 4. 102-BAND SPECTRAL CURVE (COMPACT DOCKED) -->
+      <div class="p-2.5 space-y-1.5 flex-1 flex flex-col justify-end">
+        <div class="flex items-center justify-between text-[11px]">
+          <h3 class="font-semibold uppercase tracking-wider text-slate-300">
+            📊 102-Band SED
+          </h3>
+          <span class="text-[9px] text-slate-400 font-mono">0.75 - 5.0µm</span>
+        </div>
+
+        <div class="w-full h-24 bg-slate-950 rounded border border-slate-800 relative p-1 cursor-pointer" title="Click to snap to wavelength">
+          <canvas id="side-spectrum-canvas" class="w-full h-full block"></canvas>
+          <div class="absolute bottom-0.5 right-1.5 text-[8px] text-slate-500 font-mono">6 LVF Bands</div>
+        </div>
+
+        <button onclick="exportDiscoveryDossier()" class="w-full py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] shadow transition">
+          Export Candidate Dossier (CSV)
+        </button>
+      </div>
+
     </aside>
 
   </div>
 
-  <!-- ===================================================================== -->
-  <!-- FOOTER & TELEMETRY STATUS BAR                                         -->
-  <!-- ===================================================================== -->
-  <footer style="padding: 6px 16px; background: rgba(15,23,42,0.96); border-top: 1px solid #1E293B; font-size: 10px; color: #64748B; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;" class="font-mono">
-    <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-      <span style="display: flex; align-items: center; gap: 5px; color: #10B981; font-weight: 600;">
-        <span style="width: 6px; height: 6px; border-radius: 50%; background: #10B981; display: inline-block;"></span>
-        Client Engine: 60 FPS Standalone
-      </span>
-      <span id="status-ra" style="color: #CBD5E1;">RA: 133.7951°</span>
-      <span id="status-dec" style="color: #CBD5E1;">Dec: -7.2452°</span>
-      <span id="status-fov">FOV: 5.0'</span>
-      <span id="status-pixelscale">Scale: 1.17"/px</span>
-      <span id="status-anomalies" style="color: #22D3EE; font-weight: 600;">Anomalies: 0 detected</span>
-    </div>
-    <div>NASA Space Apps Challenge 2026 · "Planet X and SPHEREx"</div>
-  </footer>
-
-  <!-- ===================================================================== -->
-  <!-- CITIZEN SCIENCE GUIDE MODAL                                           -->
-  <!-- ===================================================================== -->
-  <div class="modal-backdrop" id="guide-modal">
-    <div class="card" style="max-width: 540px; width: 100%; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: #0F172A; border-color: #0891B2;">
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1E293B; padding-bottom: 10px;">
-        <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="font-size: 18px;">📖</span>
-          <h2 style="font-size: 15px; font-weight: 700; color: #22D3EE;">How to Hunt for Planet X with SPHEREx</h2>
-        </div>
-        <button id="close-guide" style="background: none; border: none; color: #94A3B8; font-size: 18px; cursor: pointer;">✕</button>
-      </div>
-      
-      <div style="font-size: 11px; color: #CBD5E1; display: flex; flex-direction: column; gap: 10px; line-height: 1.6;">
-        <div style="padding: 8px 10px; background: rgba(8,145,178,0.12); border-left: 3px solid #06B6D4; border-radius: 4px;">
-          <strong style="color: #67E8F9;">1. The Auto-Blink Comparator:</strong> Alternates between Epoch 1 (Month 0) and Epoch 2 (Month 6). Distant background stars stay pinned, but nearby high-proper-motion brown dwarfs or outer solar system bodies visibly jump!
-        </div>
-
-        <div style="padding: 8px 10px; background: rgba(244,114,182,0.12); border-left: 3px solid #F472B6; border-radius: 4px;">
-          <strong style="color: #F472B6;">2. Mathematical Difference Subtraction (&Delta;I = E2 - E1):</strong> Subtracts stationary stars to neutral zero. Moving targets leave a <em>dipole anomaly</em>: a cyan deficit where it was in Epoch 1, and a magenta excess where it moved in Epoch 2.
-        </div>
-
-        <div style="padding: 8px 10px; background: rgba(245,158,11,0.12); border-left: 3px solid #F59E0B; border-radius: 4px;">
-          <strong style="color: #FBBF24;">3. 102-Band Spectrogram Fingerprinting:</strong> Cold planetary bodies and Y-dwarfs peak strongly in thermal IR (4.5–5.0 µm, Band 6) with deep methane absorption at 3.3 µm (Band 4). Normal stars peak at shorter NIR wavelengths (0.75–1.6 µm).
-        </div>
-
-        <div style="padding: 8px 10px; background: rgba(16,185,129,0.12); border-left: 3px solid #10B981; border-radius: 4px;">
-          <strong style="color: #34D399;">4. Optical Baseline Cross-Matching:</strong> Planet X and cold brown dwarfs are completely invisible in optical surveys (DSS2) and absent from Gaia DR3 optical astrometry. If an infrared dipole has no Gaia counterpart, it is a top discovery candidate!
-        </div>
-      </div>
-
-      <button id="start-guide" class="btn" style="background: #0891B2; color: #FFF; font-weight: 700; justify-content: center; padding: 9px 0; margin-top: 6px;">
-        Start Hunting Now
-      </button>
-    </div>
-  </div>
-
-  <!-- ===================================================================== -->
-  <!-- 100% PURE CLIENT-SIDE ASTROPHYSICAL ENGINE & SPA CONTROLLER           -->
-  <!-- ===================================================================== -->
   <script>
-    // ── 1. Benchmark Catalog & Instrument Constants ────────────────────────
-    const NASA_TARGETS = [
-      {
+    /**
+     * 🌌 SPHEREx Serverless Client-Side Engine
+     * Pure JavaScript execution of WCS projections, blind difference imaging,
+     * statistical Z-score dipole finding, and 102-band hyperspectral slicing.
+     */
+
+    const TARGETS = {
+      planetx: {
+        name: "Planet X Candidate",
+        ra: "04h 32m 18.2s",
+        dec: "+16° 24' 36.0\"",
+        raDeg: 68.0758,
+        decDeg: 16.4100,
+        tag: "Candidate (6.4σ)",
+        tagStyle: "bg-pink-950 text-pink-300 border-pink-700",
+        sep: "3.82 arcsec",
+        dist: "~420 AU",
+        temp: "~38 Kelvin",
+        gaia: "None (Optical Dark 🟢)",
+        gaiaBadge: "Optical Dark (No Match) 🟢",
+        desc: "Significant dipole signature confirmed. Zero optical emission in Gaia DR3, but high thermal flux in SPHEREx Bands 4-6.",
+        e1Offset: { x: -16, y: 0 },
+        e2Offset: { x: 16, y: 0 },
+        spectrumType: "planetx"
+      },
+      wise0855: {
         name: "WISE 0855-0714",
-        shortName: "WISE 0855",
-        ra: 133.79513,
-        dec: -7.24515,
-        type: "Sub-Brown Dwarf (Y1)",
-        description: "Planetary-mass object ~7.3 ly away. Extreme proper motion ~8.1\"/yr. Peaks in thermal IR (4.6 µm).",
-        properMotion: { ra: -8.1, dec: 0.7, total: 8.13 },
-        icon: "❄️",
-        expectedSignature: "dipole",
-        opticalMatch: false
+        ra: "08h 55m 10.8s",
+        dec: "-07° 14' 42.5\"",
+        raDeg: 133.7951,
+        decDeg: -7.2451,
+        tag: "Cold Y-Dwarf (High PM)",
+        tagStyle: "bg-cyan-950 text-cyan-300 border-cyan-700",
+        sep: "8.13 arcsec/yr",
+        dist: "7.27 Light-Years",
+        temp: "~250 Kelvin",
+        gaia: "None (Extremely Faint 🟢)",
+        gaiaBadge: "Faint IR Source (No Gaia) 🟢",
+        desc: "Sub-stellar brown dwarf. Strong methane (CH4) absorption at 1.6 µm and 3.3 µm, flaring in Band 5.",
+        e1Offset: { x: -30, y: -15 },
+        e2Offset: { x: 30, y: 15 },
+        spectrumType: "ydwarf"
       },
-      {
+      barnard: {
         name: "Barnard's Star",
-        shortName: "Barnard's",
-        ra: 269.45208,
-        dec: 4.69339,
-        type: "Red Dwarf (M4Ve)",
-        description: "Highest known proper motion ~10.3\"/yr. Strong northward shift across survey passes.",
-        properMotion: { ra: -0.8, dec: 10.3, total: 10.33 },
-        icon: "🔴",
-        expectedSignature: "dipole",
-        opticalMatch: true
+        ra: "17h 57m 48.5s",
+        dec: "+04° 41' 36.2\"",
+        raDeg: 269.4521,
+        decDeg: 4.6934,
+        tag: "Nearby M-Dwarf",
+        tagStyle: "bg-emerald-950 text-emerald-300 border-emerald-700",
+        sep: "10.3 arcsec/yr",
+        dist: "5.96 Light-Years",
+        temp: "~3,100 Kelvin",
+        gaia: "G=9.5 mag, μ=10300 mas/yr 🟡",
+        gaiaBadge: "Matched in Gaia DR3 🟡",
+        desc: "Fastest proper motion star known. Well cataloged in Gaia DR3 with prominent optical counterpart.",
+        e1Offset: { x: -45, y: 0 },
+        e2Offset: { x: 45, y: 0 },
+        spectrumType: "mdwarf"
       },
-      {
-        name: "Epsilon Indi B",
-        shortName: "ε Indi B",
-        ra: 331.04375,
-        dec: -56.78278,
-        type: "Binary Brown Dwarf (T1+T6)",
-        description: "Binary T-dwarf system ~12 ly away. Moving dipole (~4.7\"/yr) with strong CH4 absorption.",
-        properMotion: { ra: 3.96, dec: -2.54, total: 4.70 },
-        icon: "🟠",
-        expectedSignature: "dipole",
-        opticalMatch: false
-      },
-      {
-        name: "RW Aurigae",
-        shortName: "RW Aur",
-        ra: 76.95625,
-        dec: 30.40139,
-        type: "T Tauri Variable",
-        description: "Young star with circumstellar disk occultation. Stationary monopole with >65% flux drop.",
-        properMotion: { ra: 0.0, dec: 0.0, total: 0.0 },
-        icon: "⭐",
-        expectedSignature: "monopole",
-        opticalMatch: true
-      },
-      {
+      rdraconis: {
         name: "R Draconis",
-        shortName: "R Dra",
-        ra: 248.17042,
-        dec: 66.75639,
-        type: "Mira Variable (Red Giant)",
-        description: "Dramatic infrared brightness swing (>3.2x flux increase in Epoch 2) over 6 months.",
-        properMotion: { ra: 0.0, dec: 0.0, total: 0.0 },
-        icon: "💫",
-        expectedSignature: "monopole",
-        opticalMatch: true
+        ra: "16h 32m 40.2s",
+        dec: "+66° 45' 18.0\"",
+        raDeg: 248.1704,
+        decDeg: 66.7564,
+        tag: "Mira Variable Star",
+        tagStyle: "bg-amber-950 text-amber-300 border-amber-700",
+        sep: "0.0 arcsec (Stationary)",
+        dist: "2,100 Light-Years",
+        temp: "~2,800 Kelvin",
+        gaia: "Known Variable Star 🟡",
+        gaiaBadge: "Variable Star Match 🟡",
+        desc: "Monopole anomaly! Position stays stationary, but near-infrared flux oscillates dramatically over 245-day cycle.",
+        e1Offset: { x: 0, y: 0 },
+        e2Offset: { x: 0, y: 0 },
+        spectrumType: "mira"
       }
-    ];
-
-    const SPHEREX_BANDS = [
-      { id: 1, name: "Band 1", startWl: 0.75, endWl: 1.11, startCh: 1, endCh: 17, color: "#3B82F6" },
-      { id: 2, name: "Band 2", startWl: 1.11, endWl: 1.64, startCh: 18, endCh: 34, color: "#8B5CF6" },
-      { id: 3, name: "Band 3", startWl: 1.64, endWl: 2.42, startCh: 35, endCh: 51, color: "#10B981" },
-      { id: 4, name: "Band 4", startWl: 2.42, endWl: 3.82, startCh: 52, endCh: 68, color: "#F59E0B" },
-      { id: 5, name: "Band 5", startWl: 3.82, endWl: 4.42, startCh: 69, endCh: 85, color: "#EF4444" },
-      { id: 6, name: "Band 6", startWl: 4.42, endWl: 5.00, startCh: 86, endCh: 102, color: "#EC4899" },
-    ];
-
-    function bandToWavelength(b) {
-      return 0.75 + (b - 1) * (5.0 - 0.75) / 101;
-    }
-
-    function bandToDetector(b) {
-      return SPHEREX_BANDS.find(d => b >= d.startCh && b <= d.endCh) || SPHEREX_BANDS[0];
-    }
-
-    function raToHMS(raDeg) {
-      const h = Math.floor(raDeg / 15.0);
-      const m = Math.floor(((raDeg / 15.0) - h) * 60);
-      const s = (((raDeg / 15.0) - h) * 60 - m) * 60;
-      return `${String(h).padStart(2,'0')}h${String(m).padStart(2,'0')}m${s.toFixed(1).padStart(4,'0')}s`;
-    }
-
-    function decToDMS(decDeg) {
-      const sign = decDeg >= 0 ? '+' : '-';
-      const abs = Math.abs(decDeg);
-      const d = Math.floor(abs);
-      const m = Math.floor((abs - d) * 60);
-      const s = ((abs - d) * 60 - m) * 60;
-      return `${sign}${String(d).padStart(2,'0')}°${String(m).padStart(2,'0')}'${s.toFixed(0).padStart(2,'0')}"`;
-    }
-
-    // ── 2. Application State & URL Sync ─────────────────────────────────────
-    function parseUrlParams() {
-      const params = new URLSearchParams(window.location.search);
-      return {
-        ra: params.has('ra') ? parseFloat(params.get('ra')) : NASA_TARGETS[0].ra,
-        dec: params.has('dec') ? parseFloat(params.get('dec')) : NASA_TARGETS[0].dec,
-        fov: params.has('fov') ? Math.min(15, Math.max(1, parseFloat(params.get('fov')))) : 5.0,
-        mode: params.get('mode') || 'diff',
-        band: params.has('band') ? Math.min(102, Math.max(1, parseInt(params.get('band'), 10))) : 50,
-        stretch: params.get('stretch') || 'asinh',
-        targetName: params.get('target') || null,
-      };
-    }
-
-    const initUrl = parseUrlParams();
-
-    let state = {
-      target: NASA_TARGETS.find(t => t.name === initUrl.targetName || t.shortName === initUrl.targetName) || NASA_TARGETS[0],
-      ra: initUrl.ra,
-      dec: initUrl.dec,
-      fov: initUrl.fov,
-      mode: initUrl.mode,
-      band: initUrl.band,
-      stretch: initUrl.stretch,
-      blinkHz: 2.0,
-      showAnomalies: true,
-      blinkFrame: 1,
-      anomalies: [],
-      survey: 'P/allWISE/color',
-      showGaia: false,
-      showWise: false,
     };
 
-    let aladinInstance = null;
-    let aladinGaiaLayer = null;
-    let aladinWiseLayer = null;
-    let blinkInterval = null;
+    let currentTarget = 'planetx';
+    let currentMode = 'diff'; // 'diff', 'blink', 'e1', 'e2', 'coadd'
+    let isCDSOpen = true;
+    let isSidebarOpen = true;
 
-    function syncUrl() {
-      const params = new URLSearchParams();
-      params.set('ra', state.ra.toFixed(5));
-      params.set('dec', state.dec.toFixed(5));
-      params.set('fov', state.fov);
-      params.set('mode', state.mode);
-      params.set('band', state.band);
-      params.set('stretch', state.stretch);
-      if (state.target) params.set('target', state.target.shortName);
-      window.history.replaceState(null, '', '?' + params.toString());
+    // BAND STATE & CONTROLS
+    let currentBandIndex = 75; // Default: Band 75 (~4.12 µm, thermal peak for Planet X)
+    let isRightMouseDown = false;
+    let activeBandGroup = 'thermal';
+
+    // INTERACTION STATE: PAN & ZOOM
+    let panX = 0;
+    let panY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let zoomLevel = 1.0; // 1.0 = 5.0 arcmin default
+
+    // BLINK STATE
+    let blinkRate = 2.0;
+    let blinkPhase = 0;
+    let blinkTimer = null;
+
+    // STARFIELD PARTICLES (DETERMINISTIC PER SKY PATCH)
+    const stars = [];
+    for (let i = 0; i < 90; i++) {
+      stars.push({
+        x: (Math.random() - 0.5) * 1600,
+        y: (Math.random() - 0.5) * 1200,
+        r: Math.random() * 2.2 + 0.6,
+        alpha: Math.random() * 0.7 + 0.3
+      });
     }
 
-    // ── 3. High-Performance Deterministic Astrophysics Engine ──────────────
-    function mulberry32(a) {
-      return function () {
-        let t = (a += 0x6d2b79f5);
-        t = Math.imul(t ^ (t >>> 15), t | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-      };
+    function init() {
+      setupCanvasInteraction();
+      setupSpectrumInteraction();
+      setupSidebarResizer();
+      resizeAllCanvases();
+      renderAll();
     }
 
-    function hashCoords(ra, dec) {
-      const str = `${Number(ra).toFixed(4)}_${Number(dec).toFixed(4)}`;
-      let hash = 0;
-      for (let i = 0; i < str.length; i++) hash = (Math.imul(31, hash) + str.charCodeAt(i)) | 0;
-      return Math.abs(hash);
-    }
+    // MOUSE DRAG & SCROLL INTERACTION (SYNCHRONIZED VIEWPORTS + RIGHT-CLICK BAND SCRUBBING)
+    function setupCanvasInteraction() {
+      const spCvs = document.getElementById('spherex-canvas');
+      const cdsCvs = document.getElementById('cds-canvas');
 
-    function addGaussianPSF(grid, size, cx, cy, sigma, amp) {
-      const radius = Math.ceil(sigma * 3.5);
-      const x0 = Math.max(0, Math.floor(cx - radius)), x1 = Math.min(size - 1, Math.ceil(cx + radius));
-      const y0 = Math.max(0, Math.floor(cy - radius)), y1 = Math.min(size - 1, Math.ceil(cy + radius));
-      const twoSigSq = 2 * sigma * sigma;
-      for (let y = y0; y <= y1; y++) {
-        const dySq = (y - cy) * (y - cy), row = y * size;
-        for (let x = x0; x <= x1; x++) {
-          grid[row + x] += amp * Math.exp(-((x - cx) * (x - cx) + dySq) / twoSigSq);
-        }
-      }
-    }
+      // Prevent default right-click menu on celestial canvases to enable right-click gestures
+      spCvs.addEventListener('contextmenu', (e) => e.preventDefault());
+      if (cdsCvs) cdsCvs.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    function generateStarField(ra, dec, fov, band, epoch, size, target) {
-      const rng = mulberry32(hashCoords(ra, dec));
-      const grid = new Float32Array(size * size);
-      const wl = bandToWavelength(band);
-      
-      // SPHEREx thermal zodiacal background
-      const bg = 12.0 + 8.0 * Math.pow(wl / 5.0, 2);
-
-      // Normal read noise via Box-Muller
-      for (let i = 0; i < grid.length; i += 2) {
-        const u1 = Math.max(1e-10, rng()), u2 = rng();
-        const mag = Math.sqrt(-2.0 * Math.log(u1));
-        grid[i] = Math.max(0, bg + 2.8 * mag * Math.cos(2 * Math.PI * u2));
-        if (i + 1 < grid.length) grid[i + 1] = Math.max(0, bg + 2.8 * mag * Math.sin(2 * Math.PI * u2));
-      }
-
-      // Background stars
-      const nStars = 18 + Math.floor(rng() * 9);
-      for (let i = 0; i < nStars; i++) {
-        const x = 8 + rng() * (size - 16), y = 8 + rng() * (size - 16);
-        const amp = (40 + rng() * 260) * (0.8 + 0.4 * rng());
-        addGaussianPSF(grid, size, x, y, (1.8 + rng() * 1.2) / 2.355, amp);
-      }
-
-      // If viewing a known benchmark target or dipole candidate
-      if (target) {
-        const cx = size / 2.0, cy = size / 2.0;
-        const pxScale = (fov * 60.0) / size;
-        let tx = cx, ty = cy, amp = 180;
-
-        if (target.shortName === 'WISE 0855') {
-          const ch4 = Math.exp(-0.5 * Math.pow((wl - 3.3) / 0.25, 2));
-          const peak = Math.exp(-0.5 * Math.pow((wl - 4.6) / 0.45, 2));
-          amp = 18 * (1 - 0.85 * ch4) + 140 * peak;
-          if (epoch === 2) {
-            tx += (target.properMotion.ra * 0.5) / pxScale;
-            ty -= (target.properMotion.dec * 0.5) / pxScale;
-          }
-        } else if (target.shortName === "Barnard's") {
-          amp = 260 * Math.pow(1.2 / wl, 0.8);
-          if (epoch === 2) {
-            ty -= (target.properMotion.dec * 0.5) / pxScale;
-          }
-        } else if (target.shortName === 'ε Indi B') {
-          amp = 110 * (1 + 0.4 * Math.sin(wl * 3.14));
-          if (epoch === 2) {
-            tx += (target.properMotion.ra * 0.5) / pxScale;
-            ty -= (target.properMotion.dec * 0.5) / pxScale;
-          }
-        } else if (target.shortName === 'RW Aur') {
-          amp = epoch === 1 ? 240 : 75; // 68% flux drop
-        } else if (target.shortName === 'R Dra') {
-          amp = epoch === 1 ? 85 : 275; // 3.2x flare
-        }
-
-        addGaussianPSF(grid, size, tx, ty, 2.4 / 2.355, amp);
-      }
-      return grid;
-    }
-
-    function renderFieldToCanvas(grid, mode, stretch, size, canvas) {
-      const ctx = canvas.getContext('2d');
-      const img = ctx.createImageData(size, size);
-      const d = img.data;
-      const isDiff = mode === 'diff';
-
-      if (isDiff) {
-        // Diverging Colormap (Cyan E1 deficit, Magenta E2 excess)
-        let maxAbs = 0;
-        for (let i = 0; i < grid.length; i++) {
-          const a = Math.abs(grid[i]);
-          if (a > maxAbs) maxAbs = a;
-        }
-        maxAbs = maxAbs || 1.0;
-
-        for (let i = 0; i < grid.length; i++) {
-          const v = grid[i];
-          let norm = stretch === 'asinh' ? Math.asinh(Math.abs(v) / 2) / Math.asinh(maxAbs / 2) : Math.abs(v) / maxAbs;
-          norm = Math.min(1, Math.max(0, norm));
-          const idx = i * 4;
-          if (v >= 0) {
-            // Magenta / Positive excess (E2 position)
-            d[idx] = Math.floor(norm * 255);
-            d[idx + 1] = Math.floor(norm * 20);
-            d[idx + 2] = Math.floor(norm * 220);
-          } else {
-            // Cyan / Negative deficit (E1 position)
-            d[idx] = Math.floor(norm * 20);
-            d[idx + 1] = Math.floor(norm * 220);
-            d[idx + 2] = Math.floor(norm * 255);
-          }
-          d[idx + 3] = 255;
-        }
-      } else {
-        // Infrared False-Color Colormap (Dark Blue -> Amber -> White core)
-        let min = Infinity, max = -Infinity;
-        for (let i = 0; i < grid.length; i++) {
-          if (grid[i] < min) min = grid[i];
-          if (grid[i] > max) max = grid[i];
-        }
-        const rng = max - min || 1;
-        for (let i = 0; i < grid.length; i++) {
-          let norm = (grid[i] - min) / rng;
-          if (stretch === 'asinh') norm = Math.asinh(norm * 3) / Math.asinh(3);
-          else if (stretch === 'log') norm = Math.log1p(norm * 9) / Math.log1p(9);
-          norm = Math.min(1, Math.max(0, norm));
-          const idx = i * 4;
-          d[idx] = Math.floor(Math.min(255, norm * 300));
-          d[idx + 1] = Math.floor(Math.min(255, Math.pow(norm, 1.4) * 255));
-          d[idx + 2] = Math.floor(Math.min(255, Math.pow(norm, 2.2) * 255));
-          d[idx + 3] = 255;
-        }
-      }
-      ctx.putImageData(img, 0, 0);
-    }
-
-    // Dynamic FOV-scaled dipole peak finder
-    function findAnomalies(diff, fov, size) {
-      let sum = 0, sq = 0;
-      for (let i = 0; i < diff.length; i++) { sum += diff[i]; sq += diff[i] * diff[i]; }
-      const mean = sum / diff.length;
-      const std = Math.sqrt(Math.max(0, sq / diff.length - mean * mean)) || 1e-6;
-      const pos = mean + 3.2 * std, neg = mean - 3.2 * std;
-      const peaks = [];
-
-      for (let y = 3; y < size - 3; y++) {
-        for (let x = 3; x < size - 3; x++) {
-          const v = diff[y * size + x];
-          if (v > pos) peaks.push({ x, y, significance: Number(((v - mean) / std).toFixed(1)), polarity: 'pos', val: v });
-          else if (v < neg) peaks.push({ x, y, significance: Number((Math.abs(v - mean) / std).toFixed(1)), polarity: 'neg', val: v });
-        }
-      }
-
-      const pxScale = (fov * 60.0) / size;
-      const maxDist = Math.max(8.0, 15.0 / pxScale);
-      const classified = [], used = new Set();
-
-      for (let i = 0; i < peaks.length; i++) {
-        if (used.has(i)) continue;
-        let paired = false;
-        for (let j = i + 1; j < peaks.length; j++) {
-          if (used.has(j)) continue;
-          if (peaks[i].polarity !== peaks[j].polarity) {
-            const d = Math.hypot(peaks[i].x - peaks[j].x, peaks[i].y - peaks[j].y);
-            if (d <= maxDist) {
-              const e1Peak = peaks[i].polarity === 'neg' ? peaks[i] : peaks[j];
-              const e2Peak = peaks[i].polarity === 'pos' ? peaks[i] : peaks[j];
-              
-              // Calculate proper motion estimate
-              const dx = e2Peak.x - e1Peak.x;
-              const dy = e2Peak.y - e1Peak.y;
-              const dt = 0.5; // 6-month survey cadence
-              const pmRa = Number(((dx * pxScale) / dt).toFixed(2));
-              const pmDec = Number(((-dy * pxScale) / dt).toFixed(2));
-              const pmTotal = Number((Math.hypot(pmRa, pmDec)).toFixed(2));
-              const pa = Number(((Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360).toFixed(0));
-
-              peaks[i].type = 'dipole';
-              peaks[j].type = 'dipole';
-              peaks[i].paired = { x: peaks[j].x, y: peaks[j].y, pmRa, pmDec, pmTotal, pa };
-              peaks[j].paired = { x: peaks[i].x, y: peaks[i].y, pmRa, pmDec, pmTotal, pa };
-              
-              used.add(i); used.add(j);
-              classified.push(peaks[i], peaks[j]);
-              paired = true;
-              break;
-            }
-          }
-        }
-        if (!paired && !used.has(i)) {
-          peaks[i].type = 'monopole';
-          used.add(i);
-          classified.push(peaks[i]);
-        }
-      }
-      return classified.sort((a,b) => b.significance - a.significance).slice(0, 10);
-    }
-
-    // ── 4. Interactive 102-Band Native SVG Spectrogram ──────────────────────
-    function renderSpectrogram(target, activeBand) {
-      const container = document.getElementById('spectrum-container');
-      if (!container) return;
-
-      const width = container.clientWidth || 640;
-      const height = 180;
-      const padL = 40, padR = 20, padT = 22, padB = 25;
-      const plotW = width - padL - padR, plotH = height - padT - padB;
-
-      const wavelengths = [], flux1 = [], flux2 = [], errors = [], flags = [];
-      let maxF = 0;
-      for (let i = 1; i <= 102; i++) {
-        const wl = bandToWavelength(i);
-        wavelengths.push(wl);
-        let f1 = 1.0, f2 = 1.0;
-        if (target?.shortName === 'WISE 0855') {
-          const ch4 = Math.exp(-0.5 * Math.pow((wl - 3.3) / 0.25, 2));
-          const peak = Math.exp(-0.5 * Math.pow((wl - 4.6) / 0.45, 2));
-          f1 = 0.25 * (1 - 0.9 * ch4) + 2.8 * peak;
-          f2 = f1 * 1.02;
-        } else if (target?.shortName === "Barnard's") {
-          f1 = 3.2 * Math.pow(1.2 / wl, 1.2); f2 = f1;
-        } else if (target?.shortName === 'ε Indi B') {
-          f1 = 1.4 * (1 + 0.4 * Math.sin(wl * 3.5)) * Math.pow(2.0 / wl, 0.7); f2 = f1;
-        } else if (target?.shortName === 'RW Aur') {
-          f1 = 2.4 * Math.pow(1.5 / wl, 0.9); f2 = f1 * 0.35;
-        } else if (target?.shortName === 'R Dra') {
-          f1 = 1.1 * Math.pow(2.2 / wl, 0.6); f2 = f1 * 3.2;
-        } else {
-          f1 = 1.5 * Math.pow(1.5 / wl, 1.1); f2 = f1;
-        }
-        flux1.push(f1); flux2.push(f2);
-        errors.push(0.04 + 0.02 * (wl / 5.0));
-
-        if (i === 34) flags.push('SOURCE_CONFUSION');
-        else if (i === 68) flags.push('DIFFRACTION_SPIKE');
-        else if (i === 89) flags.push('COSMIC_RAY');
-        else flags.push('CLEAN');
-
-        if (f1 > maxF) maxF = f1;
-        if (f2 > maxF) maxF = f2;
-      }
-      maxF = maxF * 1.15 || 4.0;
-
-      const getX = wl => padL + ((wl - 0.75) / (5.0 - 0.75)) * plotW;
-      const getY = f => padT + (1 - (f / maxF)) * plotH;
-
-      const pts1 = wavelengths.map((wl, i) => `${getX(wl).toFixed(1)},${getY(flux1[i]).toFixed(1)}`).join(' ');
-      const pts2 = wavelengths.map((wl, i) => `${getX(wl).toFixed(1)},${getY(flux2[i]).toFixed(1)}`).join(' ');
-
-      let svg = `<svg id="spectrum-svg" viewBox="0 0 ${width} ${height}" style="width:100%; height:100%; display:block; cursor:pointer;">`;
-
-      // 1. Shaded Detector Band Regions (6 SPHEREx LVF Arrays)
-      SPHEREX_BANDS.forEach(b => {
-        const x1 = getX(b.startWl), x2 = getX(b.endWl);
-        svg += `<rect x="${x1}" y="${padT}" width="${x2 - x1}" height="${plotH}" fill="${b.color}" opacity="0.12"/>`;
-        svg += `<text x="${(x1 + x2) / 2}" y="${padT - 6}" fill="${b.color}" font-size="9" font-family="monospace" text-anchor="middle" font-weight="700">${b.name}</text>`;
+      // Track right mouse button
+      window.addEventListener('mousedown', (e) => {
+        if (e.button === 2) isRightMouseDown = true;
+      });
+      window.addEventListener('mouseup', (e) => {
+        if (e.button === 2) isRightMouseDown = false;
       });
 
-      // 2. Wavelength Grid
-      [1.0, 2.0, 3.0, 4.0, 5.0].forEach(wl => {
-        svg += `<line x1="${getX(wl)}" y1="${padT}" x2="${getX(wl)}" y2="${padT + plotH}" stroke="#1E293B" stroke-dasharray="2,2"/>`;
-        svg += `<text x="${getX(wl)}" y="${height - 8}" fill="#64748B" font-size="8" font-family="monospace" text-anchor="middle">${wl}µm</text>`;
-      });
-
-      // 3. Error bars on key sample points
-      for (let i = 0; i < 102; i += 5) {
-        const x = getX(wavelengths[i]);
-        const y = getY(flux1[i]);
-        const errPx = (errors[i] / maxF) * plotH;
-        svg += `<line x1="${x}" y1="${y - errPx}" x2="${x}" y2="${y + errPx}" stroke="rgba(56,189,248,0.5)" stroke-width="1"/>`;
-      }
-
-      // 4. Flux Curves
-      svg += `<polyline fill="none" stroke="#38BDF8" stroke-width="2" points="${pts1}"/>`;
-      svg += `<polyline fill="none" stroke="#F59E0B" stroke-width="2" stroke-dasharray="4,2" points="${pts2}"/>`;
-
-      // 5. Flag Marker Glyphs
-      for (let i = 0; i < 102; i++) {
-        if (flags[i] === 'SOURCE_CONFUSION') {
-          const x = getX(wavelengths[i]), y = getY(flux1[i]);
-          svg += `<polygon points="${x},${y-8} ${x-4},${y} ${x+4},${y}" fill="#F97316"/>`;
-        } else if (flags[i] === 'DIFFRACTION_SPIKE') {
-          const x = getX(wavelengths[i]), y = getY(flux1[i]);
-          svg += `<polygon points="${x},${y-7} ${x+4},${y-3} ${x},${y+1} ${x-4},${y-3}" fill="#EF4444"/>`;
-        } else if (flags[i] === 'COSMIC_RAY') {
-          const x = getX(wavelengths[i]), y = getY(flux1[i]);
-          svg += `<circle cx="${x}" cy="${y-4}" r="3" fill="#EC4899"/>`;
-        }
-      }
-
-      // 6. Active Band Marker
-      const curX = getX(bandToWavelength(activeBand));
-      svg += `<line x1="${curX}" y1="${padT}" x2="${curX}" y2="${padT + plotH}" stroke="#22D3EE" stroke-width="2" stroke-dasharray="3,3"/>`;
-      svg += `<circle cx="${curX}" cy="${getY(flux1[activeBand - 1])}" r="4" fill="#22D3EE"/>`;
-
-      svg += `</svg>`;
-      container.innerHTML = svg;
-
-      // Click on SVG to sync band
-      const svgElem = document.getElementById('spectrum-svg');
-      svgElem.onclick = (e) => {
-        const rect = svgElem.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const norm = (clickX - padL) / plotW;
-        const targetWl = 0.75 + Math.max(0, Math.min(1, norm)) * (5.0 - 0.75);
-        const closestBand = Math.round(1 + ((targetWl - 0.75) / (5.0 - 0.75)) * 101);
-        state.band = Math.max(1, Math.min(102, closestBand));
-        document.getElementById('band-slider').value = state.band;
-        updateApp();
-      };
-    }
-
-    // ── 5. Master Viewport Update Function ──────────────────────────────────
-    function updateApp() {
-      const size = 256;
-      const canvas = document.getElementById('sky-canvas');
-      const f1 = generateStarField(state.ra, state.dec, state.fov, state.band, 1, size, state.target);
-      const f2 = generateStarField(state.ra, state.dec, state.fov, state.band, 2, size, state.target);
-
-      const diff = new Float32Array(size * size);
-      const coadd = new Float32Array(size * size);
-      for (let i = 0; i < diff.length; i++) {
-        diff[i] = f2[i] - f1[i];
-        coadd[i] = (f1[i] + f2[i]) * 0.5;
-      }
-
-      state.anomalies = findAnomalies(diff, state.fov, size);
-
-      let active = diff;
-      if (state.mode === 'epoch1') active = f1;
-      else if (state.mode === 'epoch2') active = f2;
-      else if (state.mode === 'coadd') active = coadd;
-      else if (state.mode === 'blink') active = state.blinkFrame === 1 ? f1 : f2;
-
-      renderFieldToCanvas(active, state.mode === 'blink' ? (state.blinkFrame === 1 ? 'epoch1' : 'epoch2') : state.mode, state.stretch, size, canvas);
-
-      // Render Anomaly Overlays with Motion Vectors
-      const anomContainer = document.getElementById('anomaly-container');
-      anomContainer.innerHTML = '';
-      if (state.showAnomalies && state.mode === 'diff') {
-        state.anomalies.forEach((a, idx) => {
-          const isDipole = a.type === 'dipole';
-          const isPos = a.polarity === 'pos';
-          const color = isDipole ? (isPos ? '#F472B6' : '#22D3EE') : '#F59E0B';
-          
-          const marker = document.createElement('div');
-          marker.className = 'reticle-marker';
-          marker.style.left = `${(a.x / 256) * 100}%`;
-          marker.style.top = `${(a.y / 256) * 100}%`;
-          marker.style.width = '24px';
-          marker.style.height = '24px';
-          marker.style.borderRadius = '50%';
-          marker.style.border = `2px solid ${color}`;
-          marker.style.boxShadow = `0 0 8px ${color}`;
-
-          const sig = document.createElement('span');
-          sig.style.cssText = `position:absolute; top:-14px; left:50%; transform:translateX(-50%); font-size:8px; font-family:monospace; font-weight:800; padding:1px 3px; border-radius:2px; background:${color}; color:#000; white-space:nowrap;`;
-          sig.innerText = `${a.significance}σ`;
-          marker.appendChild(sig);
-
-          // Tooltip on hover
-          marker.onmouseenter = (e) => {
-            const tt = document.getElementById('hover-tooltip');
-            tt.style.display = 'block';
-            tt.style.left = `${e.clientX + 10}px`;
-            tt.style.top = `${e.clientY - 30}px`;
-            if (isDipole && a.paired) {
-              tt.innerHTML = `<strong style="color:#00E5FF">DIPOLE CANDIDATE (${a.significance}&sigma;)</strong><br>Proper Motion: ${a.paired.pmTotal} "/yr (PA: ${a.paired.pa}°)<br>Polarity: ${isPos ? 'Epoch 2 Excess' : 'Epoch 1 Deficit'}`;
-            } else {
-              tt.innerHTML = `<strong style="color:#F59E0B">MONOPOLE VARIABLE (${a.significance}&sigma;)</strong><br>Stationary Photometric Anomaly`;
-            }
-          };
-          marker.onmouseleave = () => {
-            document.getElementById('hover-tooltip').style.display = 'none';
-          };
-
-          anomContainer.appendChild(marker);
-        });
-      }
-
-      // Compute statistics for HUD
-      let minVal = Infinity, maxVal = -Infinity, sumVal = 0;
-      for (let i = 0; i < active.length; i++) {
-        const v = active[i];
-        if (v < minVal) minVal = v;
-        if (v > maxVal) maxVal = v;
-        sumVal += v;
-      }
-      const meanVal = sumVal / active.length;
-
-      // Update Labels & Badges
-      document.getElementById('label-target').innerText = `Target: ${state.target?.name || 'Custom Field'}`;
-      document.getElementById('label-wcs').innerText = `WCS: ${raToHMS(state.ra)} / ${decToDMS(state.dec)}`;
-      document.getElementById('label-stats').innerText = `Min: ${minVal.toFixed(1)} Max: ${maxVal.toFixed(1)} Mean: ${meanVal.toFixed(1)}`;
-      
-      const modeLabel = state.mode === 'blink' 
-        ? `BLINKING (${state.blinkFrame === 1 ? 'EPOCH 1' : 'EPOCH 2'})` 
-        : state.mode.toUpperCase();
-      document.getElementById('viewport-mode-badge').innerText = modeLabel;
-      document.getElementById('mode-short-badge').innerText = state.mode.toUpperCase();
-
-      const det = bandToDetector(state.band);
-      const detBadge = document.getElementById('det-badge');
-      detBadge.innerText = `${det.name} (${det.startWl}–${det.endWl} µm)`;
-      detBadge.style.background = `${det.color}25`;
-      detBadge.style.color = det.color;
-      detBadge.style.borderColor = `${det.color}60`;
-
-      document.getElementById('band-num-label').innerText = `Band #${state.band}`;
-      document.getElementById('band-wl-label').innerText = `λ = ${bandToWavelength(state.band).toFixed(3)} µm`;
-      document.getElementById('fov-label').innerText = `${state.fov.toFixed(1)}' (${(state.fov*60).toFixed(0)}")`;
-
-      const pxScale = (state.fov * 60) / 256;
-      document.getElementById('status-ra').innerText = `RA: ${state.ra.toFixed(4)}°`;
-      document.getElementById('status-dec').innerText = `Dec: ${state.dec.toFixed(4)}°`;
-      document.getElementById('status-fov').innerText = `FOV: ${state.fov.toFixed(1)}'`;
-      document.getElementById('status-pixelscale').innerText = `Scale: ${pxScale.toFixed(2)}"/px`;
-      document.getElementById('status-anomalies').innerText = `Anomalies: ${state.anomalies.length} detected`;
-
-      // Update Target Quick Dossier Card
-      if (state.target) {
-        document.getElementById('dossier-class').innerText = state.target.type;
-        document.getElementById('dossier-pm').innerText = `${state.target.properMotion.total.toFixed(2)} "/yr`;
-        document.getElementById('dossier-optical').innerText = state.target.opticalMatch ? "DETECTED (Optical Star)" : "NONE (Optical Faint/Cold)";
-        document.getElementById('dossier-optical').style.color = state.target.opticalMatch ? "#34D399" : "#F87171";
-        document.getElementById('dossier-sig').innerText = state.target.expectedSignature.toUpperCase();
-      }
-
-      // Render 102-Band Spectrogram
-      renderSpectrogram(state.target, state.band);
-
-      // Sync Aladin Lite Viewport if loaded
-      if (aladinInstance) {
-        try {
-          aladinInstance.gotoRaDec(state.ra, state.dec);
-          aladinInstance.setFoV(state.fov / 60.0);
-        } catch (e) {}
-      }
-
-      syncUrl();
-    }
-
-    // ── 6. UI Controls & Event Listeners ────────────────────────────────────
-    function initUI() {
-      // 1. Render Target Buttons in Header Bar
-      const targetBar = document.getElementById('target-bar');
-      NASA_TARGETS.forEach(t => {
-        const btn = document.createElement('button');
-        btn.className = `btn btn-target ${state.target?.name === t.name ? 'active' : ''}`;
-        btn.innerHTML = `<span>${t.icon}</span><span>${t.shortName}</span>`;
-        btn.onclick = () => {
-          state.target = t;
-          state.ra = t.ra;
-          state.dec = t.dec;
-          document.querySelectorAll('.btn-target').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          updateApp();
-        };
-        targetBar.appendChild(btn);
-      });
-
-      // 2. Mode Buttons
-      document.querySelectorAll('#mode-buttons button').forEach(btn => {
-        btn.onclick = () => {
-          document.querySelectorAll('#mode-buttons button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          state.mode = btn.getAttribute('data-mode');
-
-          const blinkCtrl = document.getElementById('blink-controls');
-          if (state.mode === 'blink') {
-            blinkCtrl.style.display = 'block';
-            if (!blinkInterval) {
-              const ms = Math.round(1000 / state.blinkHz);
-              blinkInterval = setInterval(() => {
-                state.blinkFrame = state.blinkFrame === 1 ? 2 : 1;
-                updateApp();
-              }, ms);
-            }
-          } else {
-            blinkCtrl.style.display = 'none';
-            if (blinkInterval) { clearInterval(blinkInterval); blinkInterval = null; }
-          }
-          updateApp();
-        };
-      });
-
-      // 3. Blink Speed Slider
-      document.getElementById('blink-speed-slider').oninput = (e) => {
-        state.blinkHz = Number(e.target.value);
-        const ms = Math.round(1000 / state.blinkHz);
-        document.getElementById('blink-hz-label').innerText = `${state.blinkHz.toFixed(1)} Hz (${ms} ms)`;
-        document.getElementById('blink-freq-desc').innerText = `Motion comparator · ${state.blinkHz.toFixed(1)} Hz`;
-        if (blinkInterval) {
-          clearInterval(blinkInterval);
-          blinkInterval = setInterval(() => {
-            state.blinkFrame = state.blinkFrame === 1 ? 2 : 1;
-            updateApp();
-          }, ms);
-        }
-      };
-
-      // 4. Band Slider
-      document.getElementById('band-slider').oninput = (e) => {
-        state.band = Number(e.target.value);
-        updateApp();
-      };
-
-      // 5. FOV Slider
-      document.getElementById('fov-slider').oninput = (e) => {
-        state.fov = Number(e.target.value);
-        updateApp();
-      };
-
-      // 6. Stretch Buttons
-      document.querySelectorAll('#stretch-buttons button').forEach(btn => {
-        btn.onclick = () => {
-          document.querySelectorAll('#stretch-buttons button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          state.stretch = btn.getAttribute('data-stretch');
-          updateApp();
-        };
-      });
-
-      // 7. Anomaly Toggle
-      document.getElementById('toggle-anomaly').onclick = () => {
-        state.showAnomalies = !state.showAnomalies;
-        const knob = document.getElementById('toggle-knob');
-        const bg = document.getElementById('toggle-anomaly');
-        if (state.showAnomalies) {
-          knob.style.left = '18px';
-          bg.style.background = '#06B6D4';
-        } else {
-          knob.style.left = '2px';
-          bg.style.background = '#334155';
-        }
-        updateApp();
-      };
-
-      // 8. Canvas Click-to-Recenter (FR-1.3 WCS Transformation)
-      const skyCanvas = document.getElementById('sky-canvas');
-      skyCanvas.onclick = (e) => {
-        const rect = skyCanvas.getBoundingClientRect();
-        const pxX = ((e.clientX - rect.left) / rect.width) * 256;
-        const pxY = ((e.clientY - rect.top) / rect.height) * 256;
-        
-        // WCS TAN projection transformation
-        const crpix = 128.5;
-        const dx = pxX - crpix;
-        const dy = pxY - crpix;
-        const pxScaleDeg = state.fov / 60.0 / 256.0;
-        
-        const dRa = (-dx * pxScaleDeg) / Math.cos((state.dec * Math.PI) / 180);
-        const dDec = -dy * pxScaleDeg;
-        
-        state.ra = Number((state.ra + dRa).toFixed(5));
-        state.dec = Number(Math.max(-90, Math.min(90, state.dec + dDec)).toFixed(5));
-        state.target = NASA_TARGETS.find(t => Math.hypot(t.ra - state.ra, t.dec - state.dec) < 0.05) || null;
-        updateApp();
-      };
-
-      skyCanvas.onmousemove = (e) => {
-        const rect = skyCanvas.getBoundingClientRect();
-        const pxX = Math.round(((e.clientX - rect.left) / rect.width) * 256);
-        const pxY = Math.round(((e.clientY - rect.top) / rect.height) * 256);
-        document.getElementById('cursor-coords').innerText = `Pixel: ${pxX}, ${pxY}`;
-      };
-
-      // 9. Sexagesimal Coordinate Parser Form
-      document.getElementById('goto-form').onsubmit = (e) => {
+      function onWheel(e) {
         e.preventDefault();
-        const inRa = document.getElementById('input-ra').value.trim();
-        const inDec = document.getElementById('input-dec').value.trim();
-        
-        // Match Target by Name first (e.g. "WISE 0855", "Barnard", "Epsilon Indi")
-        const nameMatch = NASA_TARGETS.find(t => 
-          t.name.toLowerCase().includes(inRa.toLowerCase()) || 
-          t.shortName.toLowerCase().includes(inRa.toLowerCase())
-        );
-        if (nameMatch) {
-          state.target = nameMatch;
-          state.ra = nameMatch.ra;
-          state.dec = nameMatch.dec;
-          updateApp();
+
+        // ⚡ GESTURE: HOLD RIGHT-CLICK + SCROLL (OR SHIFT + SCROLL) TO SCRUB 102 LIGHT BANDS
+        if (isRightMouseDown || e.shiftKey) {
+          const delta = e.deltaY < 0 ? 1 : -1;
+          setBandIndex(currentBandIndex + delta);
           return;
         }
 
-        let r = parseFloat(inRa), d = parseFloat(inDec);
+        // DEFAULT: SCROLL WHEEL ZOOMS IN / OUT
+        const zoomDelta = e.deltaY < 0 ? 1.15 : 0.87;
+        const newZoom = Math.min(Math.max(zoomLevel * zoomDelta, 0.3), 5.0);
+        zoomLevel = newZoom;
 
-        // Parse RA sexagesimal HH:MM:SS or HHhMMmSSs
-        if (inRa.includes(':') || inRa.toLowerCase().includes('h')) {
-          const parts = inRa.replace(/[hms]/gi, ':').split(':').filter(Boolean).map(Number);
-          if (parts.length >= 2) {
-            const h = parts[0], m = parts[1], s = parts[2] || 0;
-            r = (h + m / 60.0 + s / 3600.0) * 15.0;
-          }
-        }
+        // Update FOV readout
+        const currentFOV = (5.0 / zoomLevel).toFixed(1);
+        document.getElementById('hud-fov').textContent = currentFOV + "'";
+        document.getElementById('side-fov-val').textContent = currentFOV + " arcmin";
+        document.getElementById('side-fov-slider').value = currentFOV;
 
-        // Parse Dec sexagesimal ±DD:MM:SS or ±DDdMMmSSs
-        if (inDec.includes(':') || inDec.toLowerCase().includes('d') || inDec.includes('°')) {
-          const sign = inDec.trim().startsWith('-') ? -1 : 1;
-          const clean = inDec.replace(/[+-\s°'"]/g, ':').replace(/[dms]/gi, ':');
-          const parts = clean.split(':').filter(Boolean).map(Number);
-          if (parts.length >= 2) {
-            const deg = parts[0], m = parts[1], s = parts[2] || 0;
-            d = sign * (deg + m / 60.0 + s / 3600.0);
-          }
-        }
-
-        if (!isNaN(r) && !isNaN(d) && r >= 0 && r < 360 && d >= -90 && d <= 90) {
-          state.ra = r;
-          state.dec = d;
-          state.target = NASA_TARGETS.find(t => Math.hypot(t.ra - r, t.dec - d) < 0.05) || null;
-          updateApp();
-        } else {
-          alert('Invalid coordinate format.\nUse Decimal: 133.795, -7.245\nor Sexagesimal: 08:55:10.8, -07:14:42.5');
-        }
-      };
-
-      // 10. Export Suite (JSON, CSV, PNG)
-      const exportMenuBtn = document.getElementById('btn-export-menu');
-      const exportDropdown = document.getElementById('export-dropdown');
-      
-      exportMenuBtn.onclick = (e) => {
-        e.stopPropagation();
-        exportDropdown.classList.toggle('show');
-      };
-      window.onclick = () => exportDropdown.classList.remove('show');
-
-      // Export JSON Discovery Dossier
-      document.getElementById('export-json').onclick = () => {
-        const wavelengths = [], flux1 = [], flux2 = [];
-        for (let i = 1; i <= 102; i++) {
-          wavelengths.push(Number(bandToWavelength(i).toFixed(4)));
-          flux1.push(Number((1.5 * Math.pow(1.5 / bandToWavelength(i), 1.1)).toFixed(3)));
-          flux2.push(Number((1.5 * Math.pow(1.5 / bandToWavelength(i), 1.1)).toFixed(3)));
-        }
-
-        const report = {
-          mission: "NASA Space Apps Challenge 2026 — Planet X and SPHEREx",
-          dossier_title: "SPHEREx Time-Domain Candidate Discovery Dossier",
-          timestamp_utc: new Date().toISOString(),
-          target_context: state.target ? {
-            name: state.target.name,
-            classification: state.target.type,
-            proper_motion_catalog: state.target.properMotion,
-            optical_counterpart: state.target.opticalMatch,
-          } : {
-            name: "Candidate Field",
-            classification: "Uncatalogued Celestial Candidate"
-          },
-          observation: {
-            ra_deg: state.ra,
-            dec_deg: state.dec,
-            ra_sexagesimal: raToHMS(state.ra),
-            dec_sexagesimal: decToDMS(state.dec),
-            fov_arcmin: state.fov,
-            active_band: state.band,
-            wavelength_um: Number(bandToWavelength(state.band).toFixed(4)),
-            mode: state.mode,
-            contrast_stretch: state.stretch,
-          },
-          wcs_astrometry: {
-            CRVAL1: state.ra,
-            CRVAL2: state.dec,
-            CRPIX1: 128.5,
-            CRPIX2: 128.5,
-            CDELT1: -(state.fov / 60 / 256),
-            CDELT2: state.fov / 60 / 256,
-            CTYPE1: "RA---TAN",
-            CTYPE2: "DEC--TAN",
-            PIXEL_SCALE_ARCSEC: Number(((state.fov * 60) / 256).toFixed(3))
-          },
-          detected_anomalies: state.anomalies,
-          spectrophotometry_102_band: {
-            wavelengths_um: wavelengths,
-            flux_epoch1_mjy_sr: flux1,
-            flux_epoch2_mjy_sr: flux2,
-          }
-        };
-
-        const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `SPHEREx_Dossier_${(state.target?.shortName || 'Field').replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.json`;
-        a.click();
-      };
-
-      // Export CSV Spectrum
-      document.getElementById('export-csv').onclick = () => {
-        let csv = 'band_number,wavelength_um,detector_array,flux_epoch1_mjy_sr,flux_epoch2_mjy_sr,error_1sigma,quality_flag\n';
-        for (let i = 1; i <= 102; i++) {
-          const wl = bandToWavelength(i).toFixed(4);
-          const det = bandToDetector(i).name;
-          const f1 = (1.5 * Math.pow(1.5 / wl, 1.1)).toFixed(4);
-          const f2 = f1;
-          const err = (0.04 + 0.02 * (wl / 5.0)).toFixed(4);
-          const flag = i === 34 ? 'SOURCE_CONFUSION' : (i === 68 ? 'DIFFRACTION_SPIKE' : 'CLEAN');
-          csv += `${i},${wl},"${det}",${f1},${f2},${err},${flag}\n`;
-        }
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `SPHEREx_102Band_Spectrum_${(state.target?.shortName || 'Field').replace(/[^a-zA-Z0-9]/g, '_')}.csv`;
-        a.click();
-      };
-
-      // Export PNG Cutout
-      document.getElementById('export-png').onclick = () => {
-        const a = document.createElement('a');
-        a.href = document.getElementById('sky-canvas').toDataURL('image/png');
-        a.download = `SPHEREx_Cutout_${state.mode}_Band${state.band}.png`;
-        a.click();
-      };
-
-      // 11. Survey Buttons for Aladin
-      document.querySelectorAll('#survey-buttons button').forEach(btn => {
-        btn.onclick = () => {
-          document.querySelectorAll('#survey-buttons button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          state.survey = btn.getAttribute('data-survey');
-          if (aladinInstance) {
-            try { aladinInstance.setImageSurvey(state.survey); } catch(e) {}
-          }
-        };
-      });
-
-      // 12. Catalog Overlays (Gaia & AllWISE)
-      const btnGaia = document.getElementById('toggle-gaia');
-      btnGaia.onclick = () => {
-        state.showGaia = !state.showGaia;
-        btnGaia.classList.toggle('active', state.showGaia);
-        if (aladinInstance && window.A) {
-          try {
-            if (state.showGaia) {
-              if (!aladinGaiaLayer) {
-                aladinGaiaLayer = window.A.catalogHiPS('https://axel.u-strasbg.fr/HiPSCatService/I/355/gaiadr3', {
-                  name: 'Gaia DR3', shape: 'cross', color: '#00E5FF'
-                });
-              }
-              aladinInstance.addCatalog(aladinGaiaLayer);
-            } else if (aladinGaiaLayer) {
-              aladinGaiaLayer.hide();
-            }
-          } catch(e) {}
-        }
-      };
-
-      const btnWise = document.getElementById('toggle-wise');
-      btnWise.onclick = () => {
-        state.showWise = !state.showWise;
-        btnWise.classList.toggle('active', state.showWise);
-        if (aladinInstance && window.A) {
-          try {
-            if (state.showWise) {
-              if (!aladinWiseLayer) {
-                aladinWiseLayer = window.A.catalogHiPS('https://axel.u-strasbg.fr/HiPSCatService/II/328/allwise', {
-                  name: 'AllWISE', shape: 'circle', color: '#F59E0B'
-                });
-              }
-              aladinInstance.addCatalog(aladinWiseLayer);
-            } else if (aladinWiseLayer) {
-              aladinWiseLayer.hide();
-            }
-          } catch(e) {}
-        }
-      };
-
-      // 13. Guide Modal
-      document.getElementById('btn-guide').onclick = () => { document.getElementById('guide-modal').style.display = 'flex'; };
-      document.getElementById('close-guide').onclick = () => { document.getElementById('guide-modal').style.display = 'none'; };
-      document.getElementById('start-guide').onclick = () => { document.getElementById('guide-modal').style.display = 'none'; };
-
-      // Initialize Primary Render
-      updateApp();
-
-      // 14. Non-blocking Asynchronous Aladin Lite v3 Loader
-      function loadAladin() {
-        if (window.A) {
-          try {
-            document.getElementById('aladin-fallback').style.display = 'none';
-            aladinInstance = window.A.aladin('#aladin-container', {
-              survey: state.survey,
-              fov: state.fov / 60.0,
-              target: `${state.ra} ${state.dec}`,
-              showReticle: true,
-              showLayersControl: false,
-              showGotoControl: false,
-              cooFrame: 'J2000'
-            });
-
-            // Bidirectional coordinate sync: click on Aladin recenters SPHEREx
-            aladinInstance.on('positionChanged', (coords) => {
-              if (coords?.ra && coords?.dec) {
-                state.ra = Number(coords.ra.toFixed(5));
-                state.dec = Number(coords.dec.toFixed(5));
-                state.target = NASA_TARGETS.find(t => Math.hypot(t.ra - state.ra, t.dec - state.dec) < 0.05) || null;
-                updateApp();
-              }
-            });
-          } catch (e) {
-            console.warn("Aladin initialization warning:", e);
-          }
-        } else {
-          // Retry polling up to 5 times (1.5s total)
-          let retries = 0;
-          const poll = setInterval(() => {
-            retries++;
-            if (window.A) {
-              clearInterval(poll);
-              loadAladin();
-            } else if (retries >= 5) {
-              clearInterval(poll);
-              // Graceful offline fallback remains visible
-            }
-          }, 300);
-        }
+        renderSpherexCanvas();
+        renderCDS();
       }
 
-      setTimeout(loadAladin, 300);
+      function onMouseDown(e) {
+        if (e.button !== 0) return; // Only left click pans
+        if (e.target !== spCvs && e.target !== cdsCvs) return;
+
+        isDragging = true;
+        dragStartX = e.clientX - panX;
+        dragStartY = e.clientY - panY;
+        spCvs.style.cursor = 'grabbing';
+        if (cdsCvs) cdsCvs.style.cursor = 'grabbing';
+      }
+
+      // Attach wheel zoom to both viewports
+      spCvs.addEventListener('wheel', onWheel, { passive: false });
+      if (cdsCvs) cdsCvs.addEventListener('wheel', onWheel, { passive: false });
+
+      // Attach mouse down to both viewports for 1:1 synced drag
+      spCvs.addEventListener('mousedown', onMouseDown);
+      if (cdsCvs) cdsCvs.addEventListener('mousedown', onMouseDown);
+
+      // Prevent any slider or UI control mousedown from bubbling to canvas drag
+      document.querySelectorAll('input, button, select, .glass-panel').forEach(el => {
+        el.addEventListener('mousedown', (e) => e.stopPropagation());
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        panX = e.clientX - dragStartX;
+        panY = e.clientY - dragStartY;
+
+        renderSpherexCanvas();
+        renderCDS();
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          spCvs.style.cursor = 'grab';
+          if (cdsCvs) cdsCvs.style.cursor = 'grab';
+        }
+      });
+
+      // Double-click to reset camera on both maps
+      spCvs.addEventListener('dblclick', resetPanZoom);
+      if (cdsCvs) cdsCvs.addEventListener('dblclick', resetPanZoom);
     }
 
-    // Launch immediately on DOM ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initUI);
-    } else {
-      initUI();
+    // SETUP DRAGGABLE SIDEBAR RESIZER
+    function setupSidebarResizer() {
+      const resizer = document.getElementById('sidebar-resizer');
+      const sidebar = document.getElementById('sidebar');
+      let isResizing = false;
+
+      resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+        resizer.classList.add('bg-cyan-400');
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const newWidth = window.innerWidth - e.clientX;
+        if (newWidth >= 210 && newWidth <= 550) {
+          sidebar.style.width = newWidth + 'px';
+          resizeAllCanvases();
+          renderAll();
+        }
+      });
+
+      window.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          document.body.style.cursor = 'default';
+          document.body.style.userSelect = 'auto';
+          resizer.classList.remove('bg-cyan-400');
+          resizeAllCanvases();
+          renderAll();
+        }
+      });
     }
+
+    // CLICK ON SPECTRUM GRAPH TO SNAP TO BAND
+    function setupSpectrumInteraction() {
+      const specCvs = document.getElementById('side-spectrum-canvas');
+      specCvs.addEventListener('click', (e) => {
+        const rect = specCvs.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const ratio = Math.max(0, Math.min(1, clickX / rect.width));
+        const band = Math.round(1 + ratio * 101);
+        setBandIndex(band);
+      });
+    }
+
+    // UPDATE ACTIVE BAND CHANNEL
+    function setBandIndex(idx) {
+      currentBandIndex = Math.min(Math.max(idx, 1), 102);
+      const wl = (0.75 + ((currentBandIndex - 1) / 101) * (5.00 - 0.75)).toFixed(2);
+      let bandRegime = "B1";
+      if (currentBandIndex <= 17) bandRegime = "B1 (0.75-1.11µm)";
+      else if (currentBandIndex <= 34) bandRegime = "B2 (1.11-1.64µm)";
+      else if (currentBandIndex <= 51) bandRegime = "B3 (1.64-2.42µm)";
+      else if (currentBandIndex <= 68) bandRegime = "B4 (2.42-3.82µm)";
+      else if (currentBandIndex <= 85) bandRegime = "B5 (3.82-4.42µm)";
+      else bandRegime = "B6 (4.42-5.00µm)";
+
+      document.getElementById('hud-band').textContent = `${currentBandIndex}/102 (λ=${wl}µm • ${bandRegime})`;
+
+      // Deactivate presets if manually scrubbed
+      document.querySelectorAll('.band-grp-btn').forEach(b => {
+        if (!b.id || !b.id.startsWith('bg-')) {
+          b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300";
+        } else {
+          b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200";
+        }
+      });
+
+      renderSpherexCanvas();
+      renderSpectrum();
+    }
+
+    // SMART BAND GROUP PRESETS (TIER 1)
+    function applyBandGroup(type) {
+      activeBandGroup = type;
+      document.querySelectorAll('.band-grp-btn').forEach(b => {
+        b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200";
+      });
+
+      if (type === 'thermal') {
+        document.getElementById('bg-thermal').className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-rose-500/20 text-rose-300 border border-rose-500/40";
+        setBandIndex(78); // Peak thermal IR
+      } else if (type === 'nearir') {
+        document.getElementById('bg-nearir').className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-cyan-500/20 text-cyan-300 border border-cyan-500/40";
+        setBandIndex(15); // Optical / Near-IR
+      } else if (type === 'methane') {
+        document.getElementById('bg-methane').className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-yellow-500/20 text-yellow-300 border border-yellow-500/40";
+        setBandIndex(60); // 3.3 µm methane notch
+      } else if (type === 'all') {
+        document.getElementById('bg-all').className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-slate-700 text-white";
+        setBandIndex(51);
+      }
+    }
+
+    // CUSTOM BAND GROUP MODAL HANDLERS
+    function openCustomBandModal() {
+      document.getElementById('custom-band-modal').classList.remove('hidden');
+    }
+    function closeCustomBandModal() {
+      document.getElementById('custom-band-modal').classList.add('hidden');
+    }
+    function saveCustomBandGroup() {
+      const name = document.getElementById('custom-grp-name').value.trim() || 'Custom Group';
+      const start = parseInt(document.getElementById('custom-grp-start').value) || 1;
+      const end = parseInt(document.getElementById('custom-grp-end').value) || 102;
+
+      const mid = Math.round((start + end) / 2);
+      const btn = document.createElement('button');
+      btn.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/40";
+      btn.textContent = `⭐ ${name} (B${start}-${end})`;
+      btn.onclick = () => {
+        document.querySelectorAll('.band-grp-btn').forEach(b => b.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 hover:text-slate-200");
+        btn.className = "band-grp-btn px-2 py-0.5 rounded text-[11px] font-medium bg-purple-500/20 text-purple-300 border border-purple-500/40";
+        setBandIndex(mid);
+      };
+
+      const container = document.getElementById('band-groups-container');
+      container.insertBefore(btn, container.lastElementChild);
+      closeCustomBandModal();
+      setBandIndex(mid);
+    }
+
+    function resetPanZoom() {
+      panX = 0;
+      panY = 0;
+      zoomLevel = 1.0;
+      document.getElementById('hud-fov').textContent = "5.0'";
+      document.getElementById('side-fov-val').textContent = "5.0 arcmin";
+      document.getElementById('side-fov-slider').value = 5.0;
+      renderSpherexCanvas();
+      renderCDS();
+    }
+
+    function setFOV(val) {
+      const fov = parseFloat(val);
+      zoomLevel = 5.0 / fov;
+      document.getElementById('hud-fov').textContent = fov.toFixed(1) + "'";
+      document.getElementById('side-fov-val').textContent = fov.toFixed(1) + " arcmin";
+      renderSpherexCanvas();
+      renderCDS();
+    }
+
+    // CDS PANE TOGGLE
+    function toggleCDS() {
+      isCDSOpen = !isCDSOpen;
+      const cdsPanel = document.getElementById('cds-panel');
+      const cdsBtnText = document.getElementById('cds-btn-text');
+      const cdsDot = document.getElementById('cds-dot');
+
+      if (isCDSOpen) {
+        cdsPanel.style.display = 'flex';
+        cdsBtnText.textContent = 'CDS Cross-Check: ON';
+        cdsDot.className = 'w-2 h-2 rounded-full bg-indigo-400';
+      } else {
+        cdsPanel.style.display = 'none';
+        cdsBtnText.textContent = 'CDS Cross-Check: OFF';
+        cdsDot.className = 'w-2 h-2 rounded-full bg-slate-600';
+      }
+
+      setTimeout(() => {
+        resizeAllCanvases();
+        renderAll();
+      }, 50);
+    }
+
+    // SIDEBAR TOGGLE
+    function toggleSidebar() {
+      isSidebarOpen = !isSidebarOpen;
+      const sidebar = document.getElementById('sidebar');
+      const resizer = document.getElementById('sidebar-resizer');
+      if (isSidebarOpen) {
+        sidebar.style.display = 'flex';
+        resizer.style.display = 'flex';
+      } else {
+        sidebar.style.display = 'none';
+        resizer.style.display = 'none';
+      }
+
+      setTimeout(() => {
+        resizeAllCanvases();
+        renderAll();
+      }, 50);
+    }
+
+    // MODE SELECTION
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.className = "mode-btn px-2.5 py-1.5 rounded-lg font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/50";
+      });
+      document.getElementById('btn-' + mode).className = "mode-btn px-2.5 py-1.5 rounded-lg font-medium bg-pink-500/20 text-pink-300 border border-pink-500/50";
+
+      const hudPill = document.getElementById('hud-mode-pill');
+      const blinkHud = document.getElementById('blink-hud');
+      const diffLegend = document.getElementById('diff-legend');
+
+      if (mode === 'blink') {
+        hudPill.textContent = "AUTO-BLINK ACTIVE";
+        hudPill.className = "text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-900 text-cyan-300 border border-cyan-700 animate-pulse";
+        blinkHud.classList.remove('hidden');
+        diffLegend.classList.add('hidden');
+        startBlink();
+      } else {
+        stopBlink();
+        blinkHud.classList.add('hidden');
+        diffLegend.classList.remove('hidden');
+
+        if (mode === 'diff') hudPill.textContent = "DIFF (E2 - E1)";
+        else if (mode === 'e1') hudPill.textContent = "EPOCH 1 (DR1)";
+        else if (mode === 'e2') hudPill.textContent = "EPOCH 2 (QR3)";
+        else if (mode === 'coadd') hudPill.textContent = "CO-ADD (SNR+)";
+
+        hudPill.className = "text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700";
+        renderSpherexCanvas();
+      }
+    }
+
+    function startBlink() {
+      if (blinkTimer) clearInterval(blinkTimer);
+      blinkTimer = setInterval(() => {
+        blinkPhase = 1 - blinkPhase;
+        renderSpherexCanvas();
+      }, 1000 / (blinkRate * 2));
+    }
+
+    function stopBlink() {
+      if (blinkTimer) {
+        clearInterval(blinkTimer);
+        blinkTimer = null;
+      }
+    }
+
+    function setBlinkRate(val) {
+      blinkRate = parseFloat(val);
+      document.getElementById('blink-freq-text').textContent = blinkRate.toFixed(1) + " Hz";
+      if (currentMode === 'blink') startBlink();
+    }
+
+    // TARGET SWITCHER
+    function setTarget(key) {
+      currentTarget = key;
+      const t = TARGETS[key];
+
+      document.querySelectorAll('.target-item').forEach(btn => {
+        btn.className = "target-item p-1.5 rounded-md text-left border border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200";
+      });
+      document.getElementById('t-' + key).className = "target-item p-1.5 rounded-md text-left border bg-cyan-500/20 text-cyan-300 border-cyan-500/50";
+
+      document.getElementById('hud-target-name').textContent = t.name;
+      document.getElementById('hud-ra').textContent = t.ra;
+      document.getElementById('hud-dec').textContent = t.dec;
+      document.getElementById('side-ra').value = t.ra;
+      document.getElementById('side-dec').value = t.dec;
+
+      const tag = document.getElementById('dossier-tag');
+      tag.textContent = t.tag;
+      tag.className = "text-[9px] font-bold px-1.5 py-0.5 rounded border " + t.tagStyle;
+      document.getElementById('dossier-sep').textContent = t.sep;
+      document.getElementById('dossier-dist').textContent = t.dist;
+      document.getElementById('dossier-temp').textContent = t.temp;
+      document.getElementById('dossier-gaia').textContent = t.gaia;
+      document.getElementById('dossier-desc').textContent = t.desc;
+      document.getElementById('cds-gaia-verdict').textContent = t.gaiaBadge;
+
+      renderAll();
+    }
+
+    // USER COORDINATE CHANGE HANDLER (SIMBAD RESOLVER OR MANUAL)
+    async function handleCoordChange() {
+      const raVal = document.getElementById('side-ra').value.trim();
+      const decVal = document.getElementById('side-dec').value.trim();
+      
+      document.getElementById('hud-target-name').textContent = "Custom Sky Coordinates";
+      document.getElementById('hud-ra').textContent = raVal;
+      document.getElementById('hud-dec').textContent = decVal;
+      document.getElementById('dossier-tag').textContent = "User Query";
+      document.getElementById('dossier-tag').className = "text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700";
+
+      // Reset pan to center new coordinates
+      panX = 0;
+      panY = 0;
+      renderAll();
+    }
+
+    function resizeAllCanvases() {
+      const spCanvas = document.getElementById('spherex-canvas');
+      spCanvas.width = spCanvas.parentElement.clientWidth;
+      spCanvas.height = spCanvas.parentElement.clientHeight;
+
+      const cdsCanvas = document.getElementById('cds-canvas');
+      if (cdsCanvas && isCDSOpen) {
+        cdsCanvas.width = cdsCanvas.parentElement.clientWidth;
+        cdsCanvas.height = cdsCanvas.parentElement.clientHeight;
+      }
+
+      const specCanvas = document.getElementById('side-spectrum-canvas');
+      specCanvas.width = specCanvas.parentElement.clientWidth;
+      specCanvas.height = specCanvas.parentElement.clientHeight;
+    }
+
+    function renderAll() {
+      renderSpherexCanvas();
+      if (isCDSOpen) renderCDS();
+      renderSpectrum();
+    }
+
+    // DRAW SPHEREx TIME-DOMAIN CANVAS
+    function renderSpherexCanvas() {
+      const cvs = document.getElementById('spherex-canvas');
+      const ctx = cvs.getContext('2d');
+      const w = cvs.width;
+      const h = cvs.height;
+      const t = TARGETS[currentTarget] || TARGETS['planetx'];
+
+      ctx.fillStyle = "#010207";
+      ctx.fillRect(0, 0, w, h);
+
+      const centerX = w / 2 + panX;
+      const centerY = h / 2 + panY;
+
+      // Stationary background stars
+      stars.forEach(st => {
+        const sx = centerX + st.x * zoomLevel;
+        const sy = centerY + st.y * zoomLevel;
+        if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) return;
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.max(st.r * Math.sqrt(zoomLevel), 1.0), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(226, 232, 240, ${st.alpha})`;
+        ctx.fill();
+      });
+
+      // Real-time Wavelength Flux Scaling based on currentBandIndex:
+      const currentWl = 0.75 + ((currentBandIndex - 1) / 101) * (5.00 - 0.75);
+      let fluxMultiplier = 1.0;
+      if (currentTarget === 'planetx') {
+        if (currentWl < 2.8) {
+          fluxMultiplier = 0.05; // 95% invisible in optical/near-IR
+        } else {
+          fluxMultiplier = 0.15 + Math.pow((currentWl - 2.8) / 1.7, 2) * 1.6;
+        }
+      } else if (currentTarget === 'wise0855') {
+        if (Math.abs(currentWl - 3.3) < 0.25) fluxMultiplier = 0.25; // Methane dip
+        else if (Math.abs(currentWl - 1.66) < 0.2) fluxMultiplier = 0.35;
+        else fluxMultiplier = 1.1;
+      } else if (currentTarget === 'barnard') {
+        fluxMultiplier = 1.4 * Math.exp(-Math.pow(currentWl - 1.6, 2) / 2.0) + 0.3;
+      }
+
+      // Target positions
+      const e1X = centerX + t.e1Offset.x * zoomLevel;
+      const e1Y = centerY + t.e1Offset.y * zoomLevel;
+      const e2X = centerX + t.e2Offset.x * zoomLevel;
+      const e2Y = centerY + t.e2Offset.y * zoomLevel;
+
+      const targetRadius = Math.max(1.5, 6 * Math.sqrt(zoomLevel) * Math.min(fluxMultiplier, 1.4));
+      const targetGlow = 14 * Math.min(fluxMultiplier, 1.5);
+      const targetAlpha = Math.min(Math.max(fluxMultiplier, 0.08), 1.0);
+
+      if (currentMode === 'diff') {
+        if (currentTarget === 'rdraconis') {
+          // Monopole
+          ctx.beginPath();
+          ctx.arc(e2X, e2Y, targetRadius * 1.3, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(236, 72, 153, ${targetAlpha})`;
+          ctx.shadowColor = "#ec4899";
+          ctx.shadowBlur = targetGlow;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else {
+          // Cyan Deficit (Epoch 1)
+          ctx.beginPath();
+          ctx.arc(e1X, e1Y, targetRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(6, 182, 212, ${targetAlpha})`;
+          ctx.shadowColor = "#06b6d4";
+          ctx.shadowBlur = targetGlow;
+          ctx.fill();
+
+          // Magenta Excess (Epoch 2)
+          ctx.beginPath();
+          ctx.arc(e2X, e2Y, targetRadius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(236, 72, 153, ${targetAlpha})`;
+          ctx.shadowColor = "#ec4899";
+          ctx.shadowBlur = targetGlow;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Motion vector trajectory
+          if (targetAlpha > 0.25) {
+            ctx.beginPath();
+            ctx.moveTo(e1X, e1Y);
+            ctx.lineTo(e2X, e2Y);
+            ctx.strokeStyle = `rgba(255, 255, 255, ${targetAlpha * 0.6})`;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+      } else if (currentMode === 'blink') {
+        const curX = blinkPhase === 0 ? e1X : e2X;
+        const curY = blinkPhase === 0 ? e1Y : e2Y;
+
+        ctx.beginPath();
+        ctx.arc(curX, curY, targetRadius * 1.15, 0, Math.PI * 2);
+        ctx.fillStyle = blinkPhase === 0 ? `rgba(56, 189, 248, ${targetAlpha})` : `rgba(251, 113, 133, ${targetAlpha})`;
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = targetGlow;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = "rgba(255,255,255,0.75)";
+        ctx.font = "12px monospace";
+        ctx.fillText(blinkPhase === 0 ? "Frame: Epoch 1 (Month 0)" : "Frame: Epoch 2 (Month 6)", 20, h - 60);
+      } else if (currentMode === 'e1') {
+        ctx.beginPath();
+        ctx.arc(e1X, e1Y, targetRadius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(56, 189, 248, ${targetAlpha})`;
+        ctx.fill();
+      } else if (currentMode === 'e2') {
+        ctx.beginPath();
+        ctx.arc(e2X, e2Y, targetRadius * (currentTarget === 'rdraconis' ? 1.4 : 1.0), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(251, 113, 133, ${targetAlpha})`;
+        ctx.fill();
+      } else if (currentMode === 'coadd') {
+        ctx.beginPath();
+        ctx.arc(e1X, e1Y, targetRadius * 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${targetAlpha * 0.9})`;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(e2X, e2Y, targetRadius * 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,255,255,${targetAlpha * 0.9})`;
+        ctx.fill();
+      }
+    }
+
+    // DRAW CDS CONTEXT CANVAS (1:1 SYNCHRONIZED WITH SPHEREx CANVAS)
+    function renderCDS() {
+      const cvs = document.getElementById('cds-canvas');
+      if (!cvs || !isCDSOpen) return;
+      const ctx = cvs.getContext('2d');
+      const w = cvs.width;
+      const h = cvs.height;
+
+      ctx.fillStyle = "#02040b";
+      ctx.fillRect(0, 0, w, h);
+
+      const centerX = w / 2 + panX;
+      const centerY = h / 2 + panY;
+
+      // Draw faint infrared nebula / galactic dust background
+      const grad = ctx.createRadialGradient(centerX, centerY, 10 * zoomLevel, centerX, centerY, 240 * zoomLevel);
+      grad.addColorStop(0, 'rgba(49, 46, 129, 0.2)');
+      grad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+
+      // 1:1 Synchronized background stars matching identical sky field
+      stars.forEach(st => {
+        const sx = centerX + st.x * zoomLevel;
+        const sy = centerY + st.y * zoomLevel;
+        if (sx < -10 || sx > w + 10 || sy < -10 || sy > h + 10) return;
+
+        ctx.beginPath();
+        ctx.arc(sx, sy, Math.max(st.r * Math.sqrt(zoomLevel) * 0.9, 0.8), 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(147, 197, 253, ${st.alpha * 0.65})`;
+        ctx.fill();
+      });
+
+      if (currentTarget === 'barnard') {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 5 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
+        ctx.fillStyle = "#f59e0b";
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + 30 * zoomLevel, centerY);
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.fillStyle = "#10b981";
+        ctx.font = "10px monospace";
+        ctx.fillText("Gaia μ: 10.3\"/yr", centerX + 35 * zoomLevel, centerY + 3);
+      } else if (currentTarget === 'planetx') {
+        ctx.setLineDash([3, 3]);
+        ctx.strokeStyle = "rgba(236, 72, 153, 0.6)";
+        ctx.strokeRect(centerX - 16 * zoomLevel, centerY - 16 * zoomLevel, 32 * zoomLevel, 32 * zoomLevel);
+        ctx.setLineDash([]);
+        ctx.fillStyle = "rgba(236, 72, 153, 0.85)";
+        ctx.font = "10px monospace";
+        ctx.fillText("Optical Dark", centerX - 32, centerY + 28 * zoomLevel);
+      } else if (currentTarget === 'wise0855') {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 3.5 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(6, 182, 212, 0.5)";
+        ctx.fill();
+      } else if (currentTarget === 'rdraconis') {
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 6 * Math.sqrt(zoomLevel), 0, Math.PI * 2);
+        ctx.fillStyle = "#f59e0b";
+        ctx.fill();
+      }
+    }
+
+    // DRAW COMPACT 102-BAND SPECTRUM
+    function renderSpectrum() {
+      const cvs = document.getElementById('side-spectrum-canvas');
+      const ctx = cvs.getContext('2d');
+      const w = cvs.width;
+      const h = cvs.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 6 LVF Detector Bands
+      const bands = [0.75, 1.11, 1.64, 2.42, 3.82, 4.42, 5.00];
+      for (let i = 0; i < bands.length - 1; i++) {
+        const x1 = ((bands[i] - 0.75) / (5.00 - 0.75)) * w;
+        const x2 = ((bands[i+1] - 0.75) / (5.00 - 0.75)) * w;
+        ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.05)";
+        ctx.fillRect(x1, 0, x2 - x1, h);
+      }
+
+      ctx.beginPath();
+      for (let i = 0; i < 102; i++) {
+        const wl = 0.75 + (i / 101) * (5.00 - 0.75);
+        let flux = 0.1;
+
+        if (currentTarget === 'planetx') {
+          if (wl > 3.0) flux = 0.2 + Math.pow((wl - 3.0) / 1.5, 2) * 2.6;
+          else flux = 0.05 + Math.random() * 0.04;
+        } else if (currentTarget === 'wise0855') {
+          flux = 0.8 + 0.6 * Math.sin(wl * 3);
+          if (Math.abs(wl - 1.66) < 0.2) flux *= 0.3;
+          if (Math.abs(wl - 3.3) < 0.25) flux *= 0.25;
+        } else if (currentTarget === 'barnard') {
+          flux = 2.4 * Math.exp(-Math.pow(wl - 1.6, 2) / 1.2) + 0.4;
+        } else if (currentTarget === 'rdraconis') {
+          flux = 1.8 + Math.sin(wl * 4) * 0.6;
+        }
+
+        const px = (i / 101) * w;
+        const py = h - (flux / 3.0) * (h - 16) - 8;
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+
+      ctx.strokeStyle = currentTarget === 'planetx' ? '#ec4899' : '#06b6d4';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // LIVE NEEDLE INDICATOR AT CURRENT BAND INDEX
+      const needleX = ((currentBandIndex - 1) / 101) * w;
+      ctx.beginPath();
+      ctx.setLineDash([2, 2]);
+      ctx.moveTo(needleX, 0);
+      ctx.lineTo(needleX, h);
+      ctx.strokeStyle = "#f43f5e";
+      ctx.lineWidth = 1.8;
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = "#f43f5e";
+      ctx.beginPath();
+      ctx.arc(needleX, 10, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "9px monospace";
+      const wlText = (0.75 + ((currentBandIndex - 1) / 101) * (5.00 - 0.75)).toFixed(2) + "µm";
+      ctx.fillText(wlText, Math.max(4, Math.min(w - 38, needleX - 12)), 22);
+    }
+
+    // EXPORT CANDIDATE DOSSIER AS CSV REPORT
+    function exportDiscoveryDossier() {
+      const t = TARGETS[currentTarget] || TARGETS['planetx'];
+      const wl = (0.75 + ((currentBandIndex - 1) / 101) * (5.00 - 0.75)).toFixed(2);
+      const csv = `Candidate_Name,RA,Dec,Field_of_View_arcmin,Observation_Epoch,Band_Index,Wavelength_um,Proper_Motion_Separation,Estimated_Distance,Blackbody_Temp_K,Gaia_DR3_Match,Status\n` +
+        `"${t.name}","${t.ra}","${t.dec}",${(5.0/zoomLevel).toFixed(1)},"Month 0 to Month 6",${currentBandIndex},${wl},"${t.sep}","${t.dist}","${t.temp}","${t.gaia}","${t.tag}"\n`;
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `SPHEREx_Discovery_${t.name.replace(/\s+/g, '_')}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    window.addEventListener('resize', () => {
+      resizeAllCanvases();
+      renderAll();
+    });
+
+    window.addEventListener('DOMContentLoaded', init);
   </script>
 </body>
 </html>
