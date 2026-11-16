@@ -92,20 +92,23 @@ async def cutout(
         field2 = generate_star_field(ra, dec, fov, band, epoch=2, size=size, target=target)
         data = compute_difference(field1, field2)
     else:
-        epoch_int = int(epoch) if epoch in ("1", "2") else 1
+        if epoch in ("2", "epoch2"):
+            epoch_int = 2
+        else:
+            epoch_int = 1
         data = generate_star_field(ra, dec, fov, band, epoch=epoch_int, size=size, target=target)
 
     # ------------------------------------------------------------------
     # Anomaly detection (always run on difference frame)
     # ------------------------------------------------------------------
     if epoch == "diff":
-        anomalies_raw = detect_anomalies(data)
+        anomalies_raw = detect_anomalies(data, fov_arcmin=fov)
     else:
         diff_field = compute_difference(
             generate_star_field(ra, dec, fov, band, epoch=1, size=size, target=target),
             generate_star_field(ra, dec, fov, band, epoch=2, size=size, target=target),
         )
-        anomalies_raw = detect_anomalies(diff_field)
+        anomalies_raw = detect_anomalies(diff_field, fov_arcmin=fov)
 
     anomalies = [
         {"x": int(a["x"]), "y": int(a["y"]), "significance": round(float(a["significance"]), 2)}
@@ -172,13 +175,14 @@ async def spectrum(
     wavelengths = spec1["wavelengths"]
     band_ids = list(range(1, len(wavelengths) + 1))
 
-    # Detector band definitions (SPHEREx-like)
+    # Detector band definitions (SPHEREx 6 physical LVF detector arrays)
     detector_bands = [
-        {"name": "NIR-Short", "start_idx": 0, "end_idx": 19, "color": "#4fc3f7"},
-        {"name": "NIR-Mid",   "start_idx": 20, "end_idx": 39, "color": "#81c784"},
-        {"name": "NIR-Long",  "start_idx": 40, "end_idx": 59, "color": "#fff176"},
-        {"name": "SWIR-1",    "start_idx": 60, "end_idx": 79, "color": "#ffb74d"},
-        {"name": "SWIR-2",    "start_idx": 80, "end_idx": 101, "color": "#e57373"},
+        {"name": "Band 1", "start_idx": 0, "end_idx": 16, "color": "#3B82F6", "range": "0.75–1.11 µm"},
+        {"name": "Band 2", "start_idx": 17, "end_idx": 33, "color": "#8B5CF6", "range": "1.11–1.64 µm"},
+        {"name": "Band 3", "start_idx": 34, "end_idx": 50, "color": "#10B981", "range": "1.64–2.42 µm"},
+        {"name": "Band 4", "start_idx": 51, "end_idx": 67, "color": "#F59E0B", "range": "2.42–3.82 µm"},
+        {"name": "Band 5", "start_idx": 68, "end_idx": 84, "color": "#EF4444", "range": "3.82–4.42 µm"},
+        {"name": "Band 6", "start_idx": 85, "end_idx": 101, "color": "#EC4899", "range": "4.42–5.00 µm"},
     ]
 
     result = {

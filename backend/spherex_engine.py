@@ -252,7 +252,7 @@ def compute_coadd(field1: np.ndarray, field2: np.ndarray) -> np.ndarray:
     return (field1.astype(np.float64) + field2.astype(np.float64)) / 2.0
 
 
-def detect_anomalies(diff_image: np.ndarray, sigma_threshold: float = 3.2) -> list:
+def detect_anomalies(diff_image: np.ndarray, fov_arcmin: float = 5.0, sigma_threshold: float = 3.2) -> list:
     """
     Automated Time-Domain Anomaly / Dipole Finder.
     Identifies statistically significant residuals (|E2 - E1| > 3.2σ).
@@ -306,6 +306,10 @@ def detect_anomalies(diff_image: np.ndarray, sigma_threshold: float = 3.2) -> li
     classified = []
     used_indices = set()
 
+    arcsec_per_pixel = (fov_arcmin * 60.0) / float(w)
+    max_motion_arcsec = 12.0
+    max_dist_px = max(8.0, max_motion_arcsec / arcsec_per_pixel)
+
     for i in range(len(anomalies)):
         if i in used_indices:
             continue
@@ -318,7 +322,7 @@ def detect_anomalies(diff_image: np.ndarray, sigma_threshold: float = 3.2) -> li
             # Opposite polarity within spatial window
             if a1["polarity"] != a2["polarity"]:
                 dist = np.hypot(a1["x"] - a2["x"], a1["y"] - a2["y"])
-                if dist < 24.0:
+                if dist <= max_dist_px:
                     a1["type"] = "dipole"
                     a2["type"] = "dipole"
                     a1["paired_with"] = {"x": a2["x"], "y": a2["y"]}

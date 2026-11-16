@@ -13,6 +13,7 @@ import {
   Film
 } from 'lucide-react';
 import { SPHEREX_BANDS, bandToWavelength, bandToDetector } from '../data/targets';
+import { parseCoordinateString } from '../utils/astroEngine';
 
 export default function ControlPanel(props) {
   // Support both prop naming styles
@@ -35,15 +36,21 @@ export default function ControlPanel(props) {
   const [inputRa, setInputRa] = useState('');
   const [inputDec, setInputDec] = useState('');
 
+  const [coordError, setCoordError] = useState(null);
+
   const wavelength = bandToWavelength(band);
   const currentDetector = bandToDetector(band);
 
   const handleManualCoords = (e) => {
     e.preventDefault();
-    const parsedRa = parseFloat(inputRa);
-    const parsedDec = parseFloat(inputDec);
-    if (!isNaN(parsedRa) && !isNaN(parsedDec) && onCoordsChange) {
-      onCoordsChange(parsedRa, parsedDec);
+    setCoordError(null);
+    const parsed = parseCoordinateString(inputRa, inputDec);
+    if (parsed.isValid && onCoordsChange) {
+      onCoordsChange(parsed.ra, parsed.dec);
+      setInputRa('');
+      setInputDec('');
+    } else {
+      setCoordError('Invalid coordinates. Format: 133.795, -7.245 or 08:55:10.8, -07:14:42');
     }
   };
 
@@ -228,26 +235,27 @@ export default function ControlPanel(props) {
       <form onSubmit={handleManualCoords} className="pt-2 border-t border-gray-800/80">
         <div className="flex items-center gap-1 text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
           <Search className="w-3 h-3 text-cyan-400" />
-          <span>Goto Celestial Coordinates</span>
+          <span>Goto Coordinates (Decimal or HMS/DMS)</span>
         </div>
         <div className="grid grid-cols-2 gap-1.5 mb-1.5 font-mono">
           <input
-            type="number"
-            step="any"
-            placeholder={ra ? `RA: ${ra.toFixed(4)}°` : 'RA (deg)'}
+            type="text"
+            placeholder={ra ? `RA: ${ra.toFixed(4)}°` : 'RA (deg or HMS)'}
             value={inputRa}
             onChange={(e) => setInputRa(e.target.value)}
             className="w-full px-2 py-1 rounded bg-gray-950 border border-gray-800 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-400 text-[11px]"
           />
           <input
-            type="number"
-            step="any"
-            placeholder={dec ? `Dec: ${dec.toFixed(4)}°` : 'Dec (deg)'}
+            type="text"
+            placeholder={dec ? `Dec: ${dec.toFixed(4)}°` : 'Dec (deg or DMS)'}
             value={inputDec}
             onChange={(e) => setInputDec(e.target.value)}
             className="w-full px-2 py-1 rounded bg-gray-950 border border-gray-800 text-gray-200 placeholder-gray-600 focus:outline-none focus:border-cyan-400 text-[11px]"
           />
         </div>
+        {coordError && (
+          <p className="text-[10px] text-red-400 mb-1.5 font-sans leading-tight">{coordError}</p>
+        )}
         <button
           type="submit"
           className="w-full py-1 bg-cyan-950/60 hover:bg-cyan-900/60 border border-cyan-800 text-cyan-300 rounded font-semibold transition-colors flex items-center justify-center gap-1 text-[11px]"

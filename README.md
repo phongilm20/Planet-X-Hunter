@@ -21,6 +21,13 @@ The **SPHEREx Time-Domain Sky Explorer** is a high-performance web application d
 
 ---
 
+## 🌐 Live Web Demo (100% Serverless / 0-Install)
+Experience the application live in your browser:
+* **GitHub Pages Live Demo:** **[https://phongilm20.github.io/Planet-X-Hunter/](https://phongilm20.github.io/Planet-X-Hunter/)**
+* **Instant Offline Launch:** Double-click [`index.html`](file:///./index.html) in the root directory to run locally in any browser with zero dependencies!
+
+---
+
 ## 🚀 1-Command Startup Instructions
 
 ### Quick Start
